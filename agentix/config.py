@@ -80,6 +80,24 @@ DEFAULT_CONFIG = {
         "max_tokens": 200000,  # Max context to maintain
         "save_snapshots": True  # Save context snapshots
     },
+    "mcp": {
+        "enabled": True,  # Enable MCP (Model Context Protocol) support
+        "auto_discover": True,  # Automatically discover tools from MCP servers
+        "timeout": 30,  # Default timeout for MCP operations (seconds)
+        "servers": []  # MCP servers configuration (added via agentix tools add)
+    },
+    "tools": {
+        "enabled": True,  # Enable tool system
+        "builtin_enabled": True,  # Enable built-in tools (file_read, file_write, etc.)
+        "allow_list": [],  # If set, only these tools are allowed (empty = allow all)
+        "deny_list": [],  # Tools in this list are denied
+        "default_timeout": 30  # Default timeout for tool execution (seconds)
+    },
+    "plugins": {
+        "enabled": True,  # Enable plugin system
+        "auto_load": True,  # Automatically load plugins on startup
+        "directories": ["~/.agentix/plugins", ".agentix/plugins"]  # Plugin search paths
+    },
     "prompts": {
         "specify": "You are a product manager. Generate a functional specification (spec.md) based on the user's goal and codebase context. Focus on 'what' and 'why'. Use sections: Goal, User Stories, Acceptance Criteria, Edge Cases.",
         "plan": "You are a software architect. Generate a technical implementation plan (plan.md) based on the functional specification and codebase context. Focus on 'how'. Use sections: Architecture Overview, File Changes, Dependencies, Testing Strategy.",
@@ -214,3 +232,71 @@ class Config:
     def is_provider_enabled(self, provider_name: str) -> bool:
         """Check if a provider is enabled."""
         return self.get(f"providers.{provider_name}.enabled", False)
+
+    # MCP Configuration
+    def is_mcp_enabled(self) -> bool:
+        """Check if MCP support is enabled."""
+        return self.get("mcp.enabled", True)
+
+    def should_auto_discover_tools(self) -> bool:
+        """Check if tools should be auto-discovered from MCP servers."""
+        return self.get("mcp.auto_discover", True)
+
+    def get_mcp_timeout(self) -> int:
+        """Get MCP operation timeout in seconds."""
+        return self.get("mcp.timeout", 30)
+
+    def get_mcp_servers(self) -> list:
+        """Get configured MCP servers."""
+        return self.get("mcp.servers", [])
+
+    def add_mcp_server(self, server_config: Dict[str, Any]):
+        """Add an MCP server configuration."""
+        servers = self.get_mcp_servers()
+        servers.append(server_config)
+        self.set("mcp.servers", servers)
+
+    def remove_mcp_server(self, server_name: str) -> bool:
+        """Remove an MCP server by name."""
+        servers = self.get_mcp_servers()
+        filtered = [s for s in servers if s.get("name") != server_name]
+        if len(filtered) < len(servers):
+            self.set("mcp.servers", filtered)
+            return True
+        return False
+
+    # Tools Configuration
+    def is_tools_enabled(self) -> bool:
+        """Check if the tool system is enabled."""
+        return self.get("tools.enabled", True)
+
+    def is_builtin_tools_enabled(self) -> bool:
+        """Check if built-in tools are enabled."""
+        return self.get("tools.builtin_enabled", True)
+
+    def get_tools_allow_list(self) -> list:
+        """Get the tools allow list."""
+        return self.get("tools.allow_list", [])
+
+    def get_tools_deny_list(self) -> list:
+        """Get the tools deny list."""
+        return self.get("tools.deny_list", [])
+
+    def get_tools_timeout(self) -> int:
+        """Get default tool execution timeout."""
+        return self.get("tools.default_timeout", 30)
+
+    # Plugins Configuration
+    def is_plugins_enabled(self) -> bool:
+        """Check if plugins are enabled."""
+        return self.get("plugins.enabled", True)
+
+    def should_auto_load_plugins(self) -> bool:
+        """Check if plugins should auto-load on startup."""
+        return self.get("plugins.auto_load", True)
+
+    def get_plugin_directories(self) -> list:
+        """Get plugin search directories."""
+        dirs = self.get("plugins.directories", ["~/.agentix/plugins", ".agentix/plugins"])
+        # Expand user paths
+        return [os.path.expanduser(d) for d in dirs]

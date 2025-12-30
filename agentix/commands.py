@@ -6,9 +6,12 @@ All the interactive terminal commands:
 - Configuration
 - Model selection
 - Context management
+- Tool management
+- Plugin management
 """
 
 import os
+from pathlib import Path
 from .interactive import InteractivePrompt, ColoredOutput
 from .config import Config
 
@@ -367,3 +370,321 @@ class ModelCommands:
                     ColoredOutput.warning("\nConfig not available. Changes not saved.")
         else:
             ColoredOutput.info("\nNo changes made")
+
+
+class ToolCommands:
+    """Commands for managing tools and MCP servers"""
+
+    def __init__(self, config: Config, tool_manager=None):
+        self.config = config
+        self.tool_manager = tool_manager
+
+    def list_tools(self, source: str = None):
+        """List all available tools"""
+        if not self.tool_manager:
+            ColoredOutput.error("Tool system not initialized!")
+            return
+
+        ColoredOutput.header("\n🔧 Available Tools\n")
+
+        tools = self.tool_manager.registry.list_tools(source=source)
+
+        if not tools:
+            ColoredOutput.warning("No tools available!")
+            if self.config.is_mcp_enabled():
+                print("\nAdd MCP servers with: agentix tools add")
+            return
+
+        # Group by source
+        by_source = {}
+        for tool in tools:
+            tool_source = self.tool_manager.registry.get_source(tool.name)
+            if tool_source not in by_source:
+                by_source[tool_source] = []
+            by_source[tool_source].append(tool)
+
+        for source_name, source_tools in by_source.items():
+            print(f"\n{ColoredOutput.CYAN}{source_name}{ColoredOutput.RESET}")
+            for tool in source_tools:
+                print(f"  • {ColoredOutput.GREEN}{tool.name}{ColoredOutput.RESET}")
+                print(f"    {tool.description}")
+
+        print(f"\n{ColoredOutput.BOLD}Total: {len(tools)} tools{ColoredOutput.RESET}\n")
+
+    def add_mcp_server(self, server_name: str = None):
+        """Add an MCP server"""
+        ColoredOutput.header("\n➕ Add MCP Server\n")
+
+        if not server_name:
+            server_name = InteractivePrompt.input_text("Server name (unique identifier)")
+
+        # Get transport type
+        transport = InteractivePrompt.select(
+            "Transport type",
+            ["stdio", "http", "sse"]
+        )
+
+        server_config = {
+            "name": server_name,
+            "transport": transport,
+            "enabled": True
+        }
+
+        if transport == "stdio":
+            command = InteractivePrompt.input_text("Command to execute")
+            args_str = InteractivePrompt.input_text("Arguments (space-separated)", default="")
+            args = args_str.split() if args_str else []
+
+            server_config["command"] = command
+            server_config["args"] = args
+
+            # Optional environment variables
+            if InteractivePrompt.confirm("Add environment variables?", default=False):
+                env = {}
+                while True:
+                    key = InteractivePrompt.input_text("Environment variable name (empty to finish)")
+                    if not key:
+                        break
+                    value = InteractivePrompt.input_text(f"Value for {key}")
+                    env[key] = value
+
+                if env:
+                    server_config["env"] = env
+
+        else:  # http or sse
+            url = InteractivePrompt.input_text(f"{transport.upper()} URL")
+            server_config["url"] = url
+
+        # Save configuration
+        self.config.add_mcp_server(server_config)
+        self.config.save()
+
+        ColoredOutput.success(f"\n✓ MCP server '{server_name}' added!")
+        print(f"{ColoredOutput.YELLOW}Restart agentix to connect to the server{ColoredOutput.RESET}")
+
+    def remove_mcp_server(self, server_name: str = None):
+        """Remove an MCP server"""
+        servers = self.config.get_mcp_servers()
+
+        if not servers:
+            ColoredOutput.warning("No MCP servers configured!")
+            return
+
+        if not server_name:
+            server_names = [s["name"] for s in servers]
+            server_name = InteractivePrompt.select(
+                "Which server to remove?",
+                server_names
+            )
+
+        if InteractivePrompt.confirm(f"Remove MCP server '{server_name}'?", default=False):
+            if self.config.remove_mcp_server(server_name):
+                self.config.save()
+                ColoredOutput.success(f"✓ MCP server '{server_name}' removed!")
+            else:
+                ColoredOutput.error(f"Server '{server_name}' not found!")
+
+    def list_mcp_servers(self):
+        """List configured MCP servers"""
+        ColoredOutput.header("\n📡 MCP Servers\n")
+
+        servers = self.config.get_mcp_servers()
+
+        if not servers:
+            ColoredOutput.warning("No MCP servers configured!")
+            print("\nAdd a server with: agentix tools add")
+            return
+
+        for server in servers:
+            name = server.get("name", "Unknown")
+            transport = server.get("transport", "unknown")
+            enabled = server.get("enabled", True)
+
+            status = f"{ColoredOutput.GREEN}✓ enabled" if enabled else f"{ColoredOutput.RED}✗ disabled"
+
+            print(f"\n{ColoredOutput.BOLD}{name}{ColoredOutput.RESET} ({transport}) [{status}{ColoredOutput.RESET}]")
+
+            if transport == "stdio":
+                cmd = server.get("command", "")
+                args = " ".join(server.get("args", []))
+                print(f"  Command: {cmd} {args}")
+            else:
+                url = server.get("url", "")
+                print(f"  URL: {url}")
+
+        print()
+
+    def test_tool(self, tool_name: str = None):
+        """Test a tool execution"""
+        if not self.tool_manager:
+            ColoredOutput.error("Tool system not initialized!")
+            return
+
+        if not tool_name:
+            tools = self.tool_manager.registry.list_names()
+            if not tools:
+                ColoredOutput.warning("No tools available!")
+                return
+
+            tool_name = InteractivePrompt.select("Which tool to test?", tools)
+
+        tool = self.tool_manager.registry.get(tool_name)
+        if not tool:
+            ColoredOutput.error(f"Tool '{tool_name}' not found!")
+            return
+
+        ColoredOutput.header(f"\n🧪 Testing tool: {tool_name}\n")
+        print(f"Description: {tool.description}\n")
+
+        # Collect parameters
+        params = {}
+        for param in tool.parameters:
+            if param.required:
+                prompt = f"{param.name} ({param.type.value}) *required*"
+            else:
+                prompt = f"{param.name} ({param.type.value}) [optional]"
+
+            value = InteractivePrompt.input_text(prompt, default=str(param.default) if param.default else "")
+
+            if value:
+                # Try to convert to appropriate type
+                if param.type.value == "integer":
+                    try:
+                        value = int(value)
+                    except ValueError:
+                        ColoredOutput.error(f"Invalid integer: {value}")
+                        return
+                elif param.type.value == "float":
+                    try:
+                        value = float(value)
+                    except ValueError:
+                        ColoredOutput.error(f"Invalid float: {value}")
+                        return
+                elif param.type.value == "boolean":
+                    value = value.lower() in ["true", "yes", "1"]
+
+                params[param.name] = value
+
+        # Execute the tool
+        ColoredOutput.info("\nExecuting tool...")
+
+        result = self.tool_manager.executor.execute(tool_name, params)
+
+        if result.success:
+            ColoredOutput.success("\n✓ Tool executed successfully!")
+            print(f"\nResult: {result.data}")
+        else:
+            ColoredOutput.error(f"\n✗ Tool execution failed!")
+            print(f"Error: {result.error}")
+
+        if result.metadata:
+            print(f"\nMetadata: {result.metadata}")
+
+
+class PluginCommands:
+    """Commands for managing plugins"""
+
+    def __init__(self, config: Config, plugin_manager=None):
+        self.config = config
+        self.plugin_manager = plugin_manager
+
+    def list_plugins(self):
+        """List all plugins"""
+        if not self.plugin_manager:
+            ColoredOutput.error("Plugin system not initialized!")
+            return
+
+        ColoredOutput.header("\n🔌 Installed Plugins\n")
+
+        plugins = self.plugin_manager.list_plugins()
+
+        if not plugins:
+            ColoredOutput.warning("No plugins installed!")
+            print("\nPlugin directories:")
+            for directory in self.config.get_plugin_directories():
+                print(f"  • {directory}")
+            return
+
+        for plugin_name in plugins:
+            info = self.plugin_manager.get_plugin_info(plugin_name)
+            if not info:
+                continue
+
+            status = f"{ColoredOutput.GREEN}✓" if info["enabled"] else f"{ColoredOutput.RED}✗"
+
+            print(f"\n{status} {ColoredOutput.BOLD}{info['name']}{ColoredOutput.RESET} v{info['version']}")
+            print(f"  Type: {info['type']}")
+            print(f"  {info['description']}")
+            if info.get('author'):
+                print(f"  Author: {info['author']}")
+
+        print()
+
+    def discover_plugins(self):
+        """Discover available plugins"""
+        if not self.plugin_manager:
+            ColoredOutput.error("Plugin system not initialized!")
+            return
+
+        ColoredOutput.header("\n🔍 Discovering Plugins\n")
+
+        discovered = self.plugin_manager.discover_plugins()
+
+        if not discovered:
+            ColoredOutput.warning("No plugins found!")
+            print("\nPlugin search directories:")
+            for directory in self.config.get_plugin_directories():
+                print(f"  • {directory}")
+            return
+
+        ColoredOutput.success(f"Found {len(discovered)} plugins:\n")
+
+        for manifest in discovered:
+            loaded = self.plugin_manager.is_loaded(manifest.name)
+            status = f"{ColoredOutput.GREEN}loaded" if loaded else "not loaded"
+
+            print(f"  • {ColoredOutput.BOLD}{manifest.name}{ColoredOutput.RESET} v{manifest.version} [{status}{ColoredOutput.RESET}]")
+            print(f"    {manifest.description}")
+
+        print()
+
+    def enable_plugin(self, plugin_name: str = None):
+        """Enable a plugin"""
+        if not self.plugin_manager:
+            ColoredOutput.error("Plugin system not initialized!")
+            return
+
+        if not plugin_name:
+            plugins = self.plugin_manager.list_plugins()
+            if not plugins:
+                ColoredOutput.warning("No plugins available!")
+                return
+
+            plugin_name = InteractivePrompt.select("Which plugin to enable?", plugins)
+
+        if self.plugin_manager.enable_plugin(plugin_name):
+            ColoredOutput.success(f"✓ Plugin '{plugin_name}' enabled!")
+            print(f"{ColoredOutput.YELLOW}Restart agentix for changes to take effect{ColoredOutput.RESET}")
+        else:
+            ColoredOutput.error(f"Failed to enable plugin '{plugin_name}'")
+
+    def disable_plugin(self, plugin_name: str = None):
+        """Disable a plugin"""
+        if not self.plugin_manager:
+            ColoredOutput.error("Plugin system not initialized!")
+            return
+
+        if not plugin_name:
+            plugins = self.plugin_manager.list_plugins(enabled_only=True)
+            if not plugins:
+                ColoredOutput.warning("No enabled plugins!")
+                return
+
+            plugin_name = InteractivePrompt.select("Which plugin to disable?", plugins)
+
+        if InteractivePrompt.confirm(f"Disable plugin '{plugin_name}'?", default=False):
+            if self.plugin_manager.disable_plugin(plugin_name):
+                ColoredOutput.success(f"✓ Plugin '{plugin_name}' disabled!")
+                print(f"{ColoredOutput.YELLOW}Restart agentix for changes to take effect{ColoredOutput.RESET}")
+            else:
+                ColoredOutput.error(f"Failed to disable plugin '{plugin_name}'")
