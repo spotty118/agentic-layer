@@ -5,6 +5,7 @@ from .orchestrator import Orchestrator
 from .config import Config
 from .interactive import SetupWizard, InteractivePrompt, ColoredOutput
 from .commands import ProviderCommands, ConfigCommands, ModelCommands
+from .diff_utils import DiffViewer
 
 
 def main():
@@ -185,6 +186,33 @@ def main():
         help="Specific task ID to rollback (optional)"
     )
 
+    # Diff command
+    diff_parser = subparsers.add_parser(
+        "diff",
+        help="📊 View diffs for file changes"
+    )
+    diff_parser.add_argument(
+        "file",
+        nargs="?",
+        help="File to show diff for (interactive if not specified)"
+    )
+    diff_parser.add_argument(
+        "--backup",
+        type=int,
+        default=0,
+        help="Backup index to compare against (0 = most recent, default: 0)"
+    )
+    diff_parser.add_argument(
+        "--type",
+        choices=["unified", "side-by-side"],
+        default="unified",
+        help="Diff format (default: unified)"
+    )
+    diff_parser.add_argument(
+        "--compare",
+        help="Compare with another file instead of backup"
+    )
+
     # === UTILITIES ===
 
     subparsers.add_parser(
@@ -269,6 +297,9 @@ def main():
 
         elif args.command == "rollback":
             orchestrator.rollback(task_id=args.task_id)
+
+        elif args.command == "diff":
+            handle_diff_command(args, orchestrator)
 
         else:
             parser.print_help()
@@ -372,6 +403,61 @@ def handle_context_command(args, orchestrator):
         orchestrator.config.set("shared_context.enabled", False)
         orchestrator.config.save()
         ColoredOutput.success("✓ Shared context disabled")
+
+
+def handle_diff_command(args, orchestrator):
+    """Handle diff command"""
+    diff_viewer = DiffViewer(orchestrator.agent_dir)
+
+    # Get file to diff
+    file_path = args.file
+    if not file_path:
+        # Interactive file selection
+        import glob
+        files = glob.glob("**/*", recursive=True)
+        files = [f for f in files if os.path.isfile(f) and not f.startswith('.')]
+
+        if not files:
+            ColoredOutput.error("No files found in current directory")
+            return
+
+        file_path = InteractivePrompt.select(
+            "Select file to view diff:",
+            files[:20]  # Show first 20 files
+        )
+
+    if not os.path.exists(file_path):
+        ColoredOutput.error(f"File not found: {file_path}")
+        return
+
+    # Generate diff
+    if args.compare:
+        # Compare with another file
+        diff_text = diff_viewer.diff_files(file_path, args.compare, args.type)
+        if not diff_text:
+            ColoredOutput.error(f"Could not generate diff between {file_path} and {args.compare}")
+            return
+    else:
+        # Compare with backup
+        diff_text = diff_viewer.diff_with_backup(file_path, args.backup, args.type)
+        if not diff_text:
+            backups = diff_viewer.get_file_backups(file_path)
+            if not backups:
+                ColoredOutput.warning(f"No backups found for {file_path}")
+                print("Make some changes first, or use --compare to compare with another file\n")
+            else:
+                ColoredOutput.error(f"Could not generate diff for backup index {args.backup}")
+                print(f"Available backups: 0-{len(backups)-1}\n")
+            return
+
+    # Display diff
+    ColoredOutput.header(f"\n📊 Diff for {file_path}\n")
+    print(diff_text)
+
+    # Show stats if unified diff
+    if args.type == "unified":
+        stats = diff_viewer.format_diff_stats(diff_text)
+        print(f"\n{ColoredOutput.CYAN}{stats}{ColoredOutput.RESET}\n")
 
 
 if __name__ == "__main__":

@@ -39,17 +39,18 @@ Traditional AI coding tools lock you into a single provider. **Agentix** intelli
 
 ### 🤖 Multi-AI Integration
 
-| Provider | Strengths | Best For |
-|----------|-----------|----------|
-| **Claude** | Long context (200K tokens), Superior reasoning, Precise instructions | Specifications, Planning, Refactoring, Code Review |
-| **OpenAI Codex** | Excellent code generation, Fast inference, Broad knowledge | Code Generation, Task Execution, Problem Solving |
-| **Gemini** | Ultra-long context (2M tokens), Lightning fast, Multimodal | Large Codebases, Fast Iterations, Rapid Prototyping |
+| Provider | Latest Model (Dec 2025) | Strengths | Best For |
+|----------|----------|-----------|----------|
+| **Claude** | Sonnet 4 (claude-sonnet-4-20250514) | Long context, Superior reasoning, Precise instructions | Specifications, Planning, Refactoring, Code Review |
+| **OpenAI** | GPT-4o (gpt-4o) | Excellent code generation, Fast inference, Broad knowledge | Code Generation, Task Execution, Problem Solving |
+| **Gemini** | Gemini 2.0 (gemini-2.0-flash-exp) | Ultra-long context (2M tokens), Lightning fast, Multimodal | Large Codebases, Fast Iterations, Rapid Prototyping |
 
 ### 🛡️ Safety & Control
-- Automatic file backups before modifications
-- Interactive confirmation prompts
-- Rollback capabilities
-- Comprehensive logging and history
+- **Diff Preview**: View changes before applying with unified or side-by-side diffs
+- **Automatic Backups**: File backups created before modifications
+- **Interactive Confirmation**: Review and approve changes with diff previews
+- **Rollback Capabilities**: Restore from automatic backups
+- **Comprehensive Logging**: Full history tracking and audit trail
 
 ## Installation
 
@@ -99,15 +100,15 @@ providers:
   # Enable/disable providers
   claude:
     enabled: true
-    default_model: claude-3-5-sonnet-20241022
+    default_model: claude-sonnet-4-20250514  # Latest Sonnet 4 (Dec 2025)
 
   openai:
     enabled: true
-    default_model: gpt-4.1-mini
+    default_model: gpt-4o  # Latest GPT-4o (Dec 2025)
 
   gemini:
     enabled: true
-    default_model: gemini-1.5-flash
+    default_model: gemini-2.0-flash-exp  # Gemini 2.0 (Dec 2025)
 
   routing:
     strategy: intelligent  # intelligent | preferred | round_robin
@@ -182,6 +183,66 @@ providers:
 | `agentix review` | Review recent changes | - |
 | `agentix history` | View execution history | - |
 | `agentix rollback` | Show available backups | - |
+| `agentix diff [file]` | View file diffs | - |
+
+## Diff Viewing & Editing
+
+Agentix includes powerful diff capabilities to review changes before and after they're applied:
+
+### Interactive Diff Preview (During Work)
+When `require_confirmation: true` in config, you'll automatically see diffs before file changes:
+
+```bash
+agentix work
+
+# Output:
+📊 Preview of changes to src/api/auth.py:
+
+--- a/src/api/auth.py
++++ b/src/api/auth.py
+@@ -10,7 +10,10 @@
+ def authenticate(username, password):
+-    # TODO: Implement authentication
+-    pass
++    user = User.query.filter_by(username=username).first()
++    if user and user.check_password(password):
++        return generate_token(user)
++    return None
+
++15 -2 lines changed
+
+Apply these changes? (y/n):
+```
+
+### Manual Diff Viewing
+View diffs for any file at any time:
+
+```bash
+# View diff against most recent backup
+agentix diff src/api/auth.py
+
+# View unified diff (default)
+agentix diff src/api/auth.py --type unified
+
+# View side-by-side diff
+agentix diff src/api/auth.py --type side-by-side
+
+# Compare with specific backup (0 = most recent)
+agentix diff src/api/auth.py --backup 1
+
+# Compare two arbitrary files
+agentix diff file1.py --compare file2.py
+
+# Interactive file selection
+agentix diff
+```
+
+### Diff Features
+- **Unified Diff**: Standard git-style diff with +/- lines
+- **Side-by-Side**: Visual comparison with color highlighting
+- **Statistics**: Shows line additions/deletions count
+- **Backup History**: Compare against any previous version
+- **Color Coding**: Red for deletions, green for additions
 
 ## Real-World Example
 
