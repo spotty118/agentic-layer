@@ -16,6 +16,9 @@ from .openai import OpenAIProvider
 from .gemini import GeminiProvider
 from .openrouter import OpenRouterProvider
 from .ollama import OllamaProvider
+from .local_claude import LocalClaudeProvider
+from .local_openai import LocalOpenAIProvider
+from .local_gemini import LocalGeminiProvider
 
 
 class ProviderRouter:
@@ -26,18 +29,19 @@ class ProviderRouter:
     """
 
     # Best provider for each task type based on strengths
+    # Local providers are prioritized when available (no API costs)
     TASK_PREFERENCES = {
-        "specification": ["claude", "openai", "gemini", "openrouter", "ollama"],
-        "planning": ["claude", "openai", "gemini", "openrouter", "ollama"],
-        "tasks": ["claude", "openai", "gemini", "openrouter", "ollama"],
-        "code_generation": ["openai", "ollama", "gemini", "claude", "openrouter"],
-        "task_execution": ["gemini", "ollama", "openai", "claude", "openrouter"],
-        "refactoring": ["claude", "openai", "gemini", "openrouter", "ollama"],
-        "review": ["claude", "openai", "gemini", "openrouter", "ollama"],
-        "large_context": ["gemini", "claude", "openrouter", "openai", "ollama"],
-        "fast_iteration": ["gemini", "ollama", "openai", "claude", "openrouter"],
-        "local": ["ollama"],  # Prefer local models when requested
-        "cost_effective": ["ollama", "openrouter", "gemini", "openai", "claude"],
+        "specification": ["local_claude", "claude", "local_openai", "openai", "local_gemini", "gemini", "openrouter", "ollama"],
+        "planning": ["local_claude", "claude", "local_openai", "openai", "local_gemini", "gemini", "openrouter", "ollama"],
+        "tasks": ["local_claude", "claude", "local_openai", "openai", "local_gemini", "gemini", "openrouter", "ollama"],
+        "code_generation": ["local_openai", "openai", "local_gemini", "ollama", "gemini", "local_claude", "claude", "openrouter"],
+        "task_execution": ["local_gemini", "gemini", "local_openai", "ollama", "openai", "local_claude", "claude", "openrouter"],
+        "refactoring": ["local_claude", "claude", "local_openai", "openai", "local_gemini", "gemini", "openrouter", "ollama"],
+        "review": ["local_claude", "claude", "local_openai", "openai", "local_gemini", "gemini", "openrouter", "ollama"],
+        "large_context": ["local_gemini", "gemini", "local_claude", "claude", "openrouter", "local_openai", "openai", "ollama"],
+        "fast_iteration": ["local_gemini", "gemini", "local_openai", "ollama", "openai", "local_claude", "claude", "openrouter"],
+        "local": ["local_claude", "local_openai", "local_gemini", "ollama"],  # Prefer local models when requested
+        "cost_effective": ["local_claude", "local_openai", "local_gemini", "ollama", "openrouter", "gemini", "openai", "claude"],
     }
 
     # Map of provider names to their class constructors
@@ -47,6 +51,9 @@ class ProviderRouter:
         "gemini": GeminiProvider,
         "openrouter": OpenRouterProvider,
         "ollama": OllamaProvider,
+        "local_claude": LocalClaudeProvider,
+        "local_openai": LocalOpenAIProvider,
+        "local_gemini": LocalGeminiProvider,
     }
 
     def __init__(self, config: Optional[Dict[str, Any]] = None, shared_context: Optional[Any] = None):
@@ -91,6 +98,11 @@ class ProviderRouter:
                         site_name=provider_cfg.get("site_name")
                     )
                 elif provider_name == "ollama":
+                    provider = ProviderClass(
+                        base_url=provider_cfg.get("base_url")
+                    )
+                elif provider_name in ["local_claude", "local_openai", "local_gemini"]:
+                    # Local providers use base_url instead of api_key
                     provider = ProviderClass(
                         base_url=provider_cfg.get("base_url")
                     )

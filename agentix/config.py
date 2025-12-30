@@ -15,6 +15,25 @@ DEFAULT_CONFIG = {
     },
     "providers": {
         # Configure any/all providers - use 1 or use them all!
+
+        # LOCAL PROVIDERS (No API keys needed - connect to local installations)
+        "local_claude": {
+            "enabled": False,  # Set to True to use locally installed Claude Code
+            "base_url": None,  # Uses CLAUDE_LOCAL_URL env var, defaults to http://localhost:3000
+            "default_model": "claude-3-5-sonnet-20241022"
+        },
+        "local_openai": {
+            "enabled": False,  # Set to True to use locally installed OpenAI/Codex
+            "base_url": None,  # Uses OPENAI_LOCAL_URL env var, defaults to http://localhost:3002
+            "default_model": "gpt-4-turbo"
+        },
+        "local_gemini": {
+            "enabled": False,  # Set to True to use locally installed Gemini
+            "base_url": None,  # Uses GEMINI_LOCAL_URL env var, defaults to http://localhost:3001
+            "default_model": "gemini-1.5-flash"
+        },
+
+        # REMOTE API PROVIDERS (Require API keys)
         "claude": {
             "enabled": True,
             "api_key": None,  # Uses ANTHROPIC_API_KEY env var if not set
@@ -46,15 +65,16 @@ DEFAULT_CONFIG = {
             "strategy": "intelligent",  # intelligent | preferred | round_robin
             "preferred_provider": None,  # Set to force a specific provider
             "task_routing": {
-                "specification": "claude",  # Best for specs
-                "planning": "claude",  # Best for planning
-                "tasks": "claude",  # Best for task breakdown
-                "code_generation": "openai",  # Codex excellence
-                "task_execution": "gemini",  # Fast execution
-                "refactoring": "claude",  # Best code understanding
-                "review": "claude",  # Best analysis
-                "local": "ollama",  # For local/offline work
-                "cost_effective": "ollama"  # Free local models
+                # Local providers preferred when available (no API costs)
+                "specification": "local_claude",  # Best for specs
+                "planning": "local_claude",  # Best for planning
+                "tasks": "local_claude",  # Best for task breakdown
+                "code_generation": "local_openai",  # Codex excellence
+                "task_execution": "local_gemini",  # Fast execution
+                "refactoring": "local_claude",  # Best code understanding
+                "review": "local_claude",  # Best analysis
+                "local": "local_claude",  # For local/offline work
+                "cost_effective": "local_claude"  # Free local providers
             }
         }
     },

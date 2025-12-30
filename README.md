@@ -39,11 +39,15 @@ Traditional AI coding tools lock you into a single provider. **Agentix** intelli
 
 ### 🤖 Multi-AI Integration
 
-| Provider | Strengths | Best For |
-|----------|-----------|----------|
-| **Claude** | Long context (200K tokens), Superior reasoning, Precise instructions | Specifications, Planning, Refactoring, Code Review |
-| **OpenAI Codex** | Excellent code generation, Fast inference, Broad knowledge | Code Generation, Task Execution, Problem Solving |
-| **Gemini** | Ultra-long context (2M tokens), Lightning fast, Multimodal | Large Codebases, Fast Iterations, Rapid Prototyping |
+| Provider | Strengths | Best For | API/Local |
+|----------|-----------|----------|-----------|
+| **Claude** | Long context (200K tokens), Superior reasoning, Precise instructions | Specifications, Planning, Refactoring, Code Review | Both 🆕 |
+| **OpenAI Codex** | Excellent code generation, Fast inference, Broad knowledge | Code Generation, Task Execution, Problem Solving | Both 🆕 |
+| **Gemini** | Ultra-long context (2M tokens), Lightning fast, Multimodal | Large Codebases, Fast Iterations, Rapid Prototyping | Both 🆕 |
+| **Ollama** | 100% local, Privacy-focused, No API costs | Offline work, Sensitive codebases | Local only |
+| **OpenRouter** | 100+ models, Flexible pricing | Access to many models | API only |
+
+**🆕 Local Provider Support:** Connect to locally installed Claude Code, Gemini, and Codex (via VS Code extensions or HTTP proxies) without API keys! See [LOCAL_PROVIDERS.md](LOCAL_PROVIDERS.md) for setup.
 
 ### 🛡️ Safety & Control
 - Automatic file backups before modifications
@@ -58,6 +62,24 @@ pip install agentix
 ```
 
 ## Quick Start
+
+### Option 1: Local Providers (No API Keys!) 🆕
+
+Use locally installed Claude Code, Gemini, or Codex without API keys:
+
+```bash
+# 1. Enable local providers in .agent/config.yaml
+# (See LOCAL_PROVIDERS.md for setup)
+
+# 2. Initialize in your project
+cd my-project
+agentix init
+
+# 3. Start building (uses local providers automatically)
+agentix specify "Add JWT authentication"
+```
+
+### Option 2: Remote API Providers
 
 ```bash
 # 1. Set up API keys (you need at least one)
