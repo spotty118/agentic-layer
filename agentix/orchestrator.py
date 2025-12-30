@@ -5,6 +5,7 @@ from .config import Config
 from .validators import Validator, ValidationError, safe_file_operation
 from .logger import AgentLogger, ColoredOutput
 from .providers.router import ProviderRouter
+from .diff_utils import DiffViewer
 
 class Orchestrator:
     def __init__(self, root_dir):
@@ -19,6 +20,7 @@ class Orchestrator:
         self.config = Config(self.agent_dir) if os.path.exists(self.agent_dir) else None
         self.logger = None
         self.router = None
+        self.diff_viewer = DiffViewer(self.agent_dir) if os.path.exists(self.agent_dir) else None
 
         if self.config:
             self.logger = AgentLogger(
@@ -50,6 +52,9 @@ class Orchestrator:
                 enabled=self.config.is_logging_enabled(),
                 level=self.config.get_log_level()
             )
+
+            # Initialize diff viewer
+            self.diff_viewer = DiffViewer(self.agent_dir)
 
             ColoredOutput.success(f"Initialized agentic layer in {self.agent_dir}")
             ColoredOutput.info("Created default config.yaml - customize as needed")
@@ -457,6 +462,20 @@ Followed by a human-readable checklist."""
         is_valid, validation_error = Validator.validate_file_content(new_content, file_extension)
         if not is_valid:
             ColoredOutput.warning(f"Content validation warning: {validation_error}")
+
+        # Show diff preview if file already exists and confirmation is required
+        if os.path.exists(target_path) and self.config and self.config.should_confirm() and self.diff_viewer:
+            diff_text = self.diff_viewer.preview_change(task["path"], new_content, diff_type="unified")
+            if diff_text and diff_text.strip():
+                ColoredOutput.header(f"\n📊 Preview of changes to {task['path']}:\n")
+                print(diff_text)
+                stats = self.diff_viewer.format_diff_stats(diff_text)
+                print(f"\n{ColoredOutput.CYAN}{stats}{ColoredOutput.RESET}\n")
+
+                response = input(f"{ColoredOutput.YELLOW}Apply these changes? (y/n): {ColoredOutput.RESET}")
+                if response.lower() != 'y':
+                    ColoredOutput.warning("File changes cancelled by user")
+                    return
 
         # Write the file
         os.makedirs(os.path.dirname(target_path), exist_ok=True)
