@@ -6,6 +6,8 @@ from .config import Config
 from .interactive import SetupWizard, InteractivePrompt, ColoredOutput
 from .commands import ProviderCommands, ConfigCommands, ModelCommands
 from .diff_utils import DiffViewer
+from .code_viewer import CodeViewer
+from .syntax_highlighter import ColorScheme
 
 
 def main():
@@ -231,6 +233,53 @@ def main():
         help="Compare with another file instead of backup"
     )
 
+    # View command - File preview with syntax highlighting
+    view_parser = subparsers.add_parser(
+        "view",
+        help="👁️  View file with syntax highlighting"
+    )
+    view_parser.add_argument(
+        "file",
+        nargs="?",
+        help="File to view (interactive if not specified)"
+    )
+    view_parser.add_argument(
+        "--no-line-numbers",
+        action="store_true",
+        help="Hide line numbers"
+    )
+    view_parser.add_argument(
+        "--start",
+        type=int,
+        help="Starting line number (1-indexed)"
+    )
+    view_parser.add_argument(
+        "--end",
+        type=int,
+        help="Ending line number (1-indexed)"
+    )
+    view_parser.add_argument(
+        "--theme",
+        choices=["dark", "light", "monokai", "dracula"],
+        default="dark",
+        help="Color theme (default: dark)"
+    )
+    view_parser.add_argument(
+        "--info",
+        action="store_true",
+        help="Show file information and statistics"
+    )
+    view_parser.add_argument(
+        "--search",
+        help="Search for a term in the file"
+    )
+    view_parser.add_argument(
+        "--context",
+        type=int,
+        default=2,
+        help="Number of context lines around search results (default: 2)"
+    )
+
     # === UTILITIES ===
 
     subparsers.add_parser(
@@ -317,6 +366,9 @@ def main():
 
         elif args.command == "diff":
             handle_diff_command(args, orchestrator)
+
+        elif args.command == "view":
+            handle_view_command(args, orchestrator)
 
         else:
             parser.print_help()
@@ -489,6 +541,75 @@ def handle_diff_command(args, orchestrator):
     if args.type == "unified":
         stats = diff_viewer.format_diff_stats(diff_text)
         print(f"\n{ColoredOutput.CYAN}{stats}{ColoredOutput.RESET}\n")
+
+
+def handle_view_command(args, orchestrator):
+    """Handle view command for file preview with syntax highlighting"""
+    # Get file to view
+    file_path = args.file
+    if not file_path:
+        # Interactive file selection
+        import glob
+        files = glob.glob("**/*", recursive=True)
+        files = [f for f in files if os.path.isfile(f) and not f.startswith('.')]
+
+        if not files:
+            ColoredOutput.error("No files found in current directory")
+            return
+
+        file_path = InteractivePrompt.select(
+            "Select file to view:",
+            files[:20]  # Show first 20 files
+        )
+
+    if not os.path.exists(file_path):
+        ColoredOutput.error(f"File not found: {file_path}")
+        return
+
+    # Map theme name to ColorScheme enum
+    theme_map = {
+        "dark": ColorScheme.DARK,
+        "light": ColorScheme.LIGHT,
+        "monokai": ColorScheme.MONOKAI,
+        "dracula": ColorScheme.DRACULA,
+    }
+    theme = theme_map.get(args.theme, ColorScheme.DARK)
+
+    # Create code viewer
+    viewer = CodeViewer(theme=theme)
+
+    # Show file info if requested
+    if args.info:
+        ColoredOutput.header(f"\n👁️  File Information\n")
+        info = viewer.show_file_info(file_path)
+        print(info)
+        print()
+        return
+
+    # Search in file if requested
+    if args.search:
+        ColoredOutput.header(f"\n🔍 Search Results\n")
+        results = viewer.search_in_file(
+            file_path,
+            args.search,
+            context_lines=args.context
+        )
+        print(results)
+        print()
+        return
+
+    # View the file
+    ColoredOutput.header(f"\n👁️  Viewing: {ColoredOutput.BRIGHT_CYAN}{file_path}{ColoredOutput.RESET}\n")
+
+    output = viewer.view_file(
+        file_path,
+        show_line_numbers=not args.no_line_numbers,
+        start_line=args.start,
+        end_line=args.end
+    )
+
+    print(output)
+    print()
 
 
 if __name__ == "__main__":

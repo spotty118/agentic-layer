@@ -14,6 +14,9 @@ from .logger import AgentLogger, ColoredOutput
 from .validators import Validator, ValidationError
 from .interactive import InteractivePrompt, SetupWizard
 from .commands import ProviderCommands, ConfigCommands, ModelCommands
+from .syntax_highlighter import SyntaxHighlighter, ColorScheme, TokenType
+from .code_viewer import CodeViewer
+from .diff_utils import DiffViewer
 from .providers import (
     AIProvider,
     ClaudeProvider,
@@ -36,6 +39,11 @@ __all__ = [
     "ProviderCommands",
     "ConfigCommands",
     "ModelCommands",
+    "SyntaxHighlighter",
+    "ColorScheme",
+    "TokenType",
+    "CodeViewer",
+    "DiffViewer",
     "AIProvider",
     "ClaudeProvider",
     "OpenAIProvider",

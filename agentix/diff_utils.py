@@ -1,22 +1,37 @@
 """Diff utilities for viewing and managing file changes."""
 import os
 import difflib
+import re
 from typing import List, Optional, Tuple
 from pathlib import Path
 from datetime import datetime
+
+from .syntax_highlighter import SyntaxHighlighter, ColorScheme, ANSIColors
 
 
 class DiffViewer:
     """Handle diff generation and viewing for file changes."""
 
-    def __init__(self, agent_dir: str):
+    def __init__(self, agent_dir: str, theme: ColorScheme = ColorScheme.DARK,
+                 enable_syntax_highlighting: bool = True):
+        """
+        Initialize the diff viewer.
+
+        Args:
+            agent_dir: Directory containing agent files
+            theme: Color scheme for syntax highlighting
+            enable_syntax_highlighting: Whether to enable syntax highlighting in diffs
+        """
         self.agent_dir = agent_dir
         self.backup_dir = os.path.join(agent_dir, "backups")
+        self.theme = theme
+        self.enable_syntax_highlighting = enable_syntax_highlighting
+        self.highlighter = SyntaxHighlighter(theme) if enable_syntax_highlighting else None
 
     def generate_unified_diff(self, original: str, modified: str,
                             filepath: str, context_lines: int = 3) -> str:
         """
-        Generate a unified diff between original and modified content.
+        Generate a unified diff between original and modified content with syntax highlighting.
 
         Args:
             original: Original file content
@@ -25,7 +40,7 @@ class DiffViewer:
             context_lines: Number of context lines around changes
 
         Returns:
-            Unified diff string
+            Unified diff string with color coding
         """
         original_lines = original.splitlines(keepends=True)
         modified_lines = modified.splitlines(keepends=True)
@@ -39,12 +54,74 @@ class DiffViewer:
             n=context_lines
         )
 
-        return ''.join(diff)
+        diff_text = ''.join(diff)
+
+        # Apply syntax highlighting to diff
+        if self.enable_syntax_highlighting and self.highlighter:
+            diff_text = self._highlight_unified_diff(diff_text, filepath)
+
+        return diff_text
+
+    def _highlight_unified_diff(self, diff_text: str, filepath: str) -> str:
+        """
+        Apply syntax highlighting to unified diff output.
+
+        Args:
+            diff_text: Raw unified diff text
+            filepath: Path to the file (for language detection)
+
+        Returns:
+            Colorized diff text
+        """
+        lines = diff_text.split('\n')
+        highlighted_lines = []
+        language = self.highlighter.detect_language(filepath)
+
+        for line in lines:
+            if line.startswith('---') or line.startswith('+++'):
+                # File headers in bold cyan
+                highlighted_lines.append(
+                    f"{ANSIColors.BOLD}{ANSIColors.BRIGHT_CYAN}{line}{ANSIColors.RESET}"
+                )
+            elif line.startswith('@@'):
+                # Hunk headers in bold magenta
+                highlighted_lines.append(
+                    f"{ANSIColors.BOLD}{ANSIColors.BRIGHT_MAGENTA}{line}{ANSIColors.RESET}"
+                )
+            elif line.startswith('-'):
+                # Deletions in red with syntax highlighting
+                stripped = line[1:]  # Remove the '-' prefix
+                if language and stripped.strip():
+                    highlighted = self.highlighter.highlight(stripped, language)
+                    highlighted_lines.append(
+                        f"{ANSIColors.BRIGHT_RED}−{highlighted}{ANSIColors.RESET}"
+                    )
+                else:
+                    highlighted_lines.append(f"{ANSIColors.BRIGHT_RED}{line}{ANSIColors.RESET}")
+            elif line.startswith('+'):
+                # Additions in green with syntax highlighting
+                stripped = line[1:]  # Remove the '+' prefix
+                if language and stripped.strip():
+                    highlighted = self.highlighter.highlight(stripped, language)
+                    highlighted_lines.append(
+                        f"{ANSIColors.BRIGHT_GREEN}+{highlighted}{ANSIColors.RESET}"
+                    )
+                else:
+                    highlighted_lines.append(f"{ANSIColors.BRIGHT_GREEN}{line}{ANSIColors.RESET}")
+            else:
+                # Context lines with syntax highlighting
+                if language and line.strip():
+                    highlighted = self.highlighter.highlight(line, language)
+                    highlighted_lines.append(f"{ANSIColors.BRIGHT_BLACK} {highlighted}{ANSIColors.RESET}")
+                else:
+                    highlighted_lines.append(f"{ANSIColors.BRIGHT_BLACK}{line}{ANSIColors.RESET}")
+
+        return '\n'.join(highlighted_lines)
 
     def generate_side_by_side_diff(self, original: str, modified: str,
                                    filepath: str, width: int = 80) -> str:
         """
-        Generate a side-by-side diff view.
+        Generate a side-by-side diff view with syntax highlighting.
 
         Args:
             original: Original file content
@@ -53,38 +130,51 @@ class DiffViewer:
             width: Width of each column
 
         Returns:
-            Side-by-side diff string
+            Side-by-side diff string with syntax highlighting
         """
         original_lines = original.splitlines()
         modified_lines = modified.splitlines()
 
-        diff = difflib.HtmlDiff().make_table(
-            original_lines,
-            modified_lines,
-            fromdesc=f"Original: {filepath}",
-            todesc=f"Modified: {filepath}",
-            context=True,
-            numlines=3
-        )
-
-        # Convert HTML table to plain text format
-        # This is a simplified version - could be enhanced
-        result = [f"\n{'='*120}"]
-        result.append(f"File: {filepath}")
-        result.append(f"{'='*120}\n")
+        # Build header
+        result = [f"\n{ANSIColors.BOLD}{'='*120}{ANSIColors.RESET}"]
+        result.append(f"{ANSIColors.BOLD}File: {ANSIColors.BRIGHT_CYAN}{filepath}{ANSIColors.RESET}")
+        result.append(f"{ANSIColors.BOLD}{'='*120}{ANSIColors.RESET}\n")
 
         differ = difflib.Differ()
         diff_lines = list(differ.compare(original_lines, modified_lines))
 
+        language = None
+        if self.enable_syntax_highlighting and self.highlighter:
+            language = self.highlighter.detect_language(filepath)
+
         for line in diff_lines:
             if line.startswith('- '):
-                result.append(f"\033[91m{line}\033[0m")  # Red for deletions
+                # Deletion - red with syntax highlighting
+                content = line[2:]  # Remove '- ' prefix
+                if language and content.strip():
+                    highlighted = self.highlighter.highlight(content, language)
+                    result.append(f"{ANSIColors.BRIGHT_RED}− {highlighted}{ANSIColors.RESET}")
+                else:
+                    result.append(f"{ANSIColors.BRIGHT_RED}− {content}{ANSIColors.RESET}")
             elif line.startswith('+ '):
-                result.append(f"\033[92m{line}\033[0m")  # Green for additions
+                # Addition - green with syntax highlighting
+                content = line[2:]  # Remove '+ ' prefix
+                if language and content.strip():
+                    highlighted = self.highlighter.highlight(content, language)
+                    result.append(f"{ANSIColors.BRIGHT_GREEN}+ {highlighted}{ANSIColors.RESET}")
+                else:
+                    result.append(f"{ANSIColors.BRIGHT_GREEN}+ {content}{ANSIColors.RESET}")
             elif line.startswith('? '):
-                continue  # Skip diff markers
+                # Skip diff markers
+                continue
             else:
-                result.append(line)
+                # Context line with syntax highlighting
+                content = line[2:] if len(line) > 2 else line
+                if language and content.strip():
+                    highlighted = self.highlighter.highlight(content, language)
+                    result.append(f"{ANSIColors.BRIGHT_BLACK}  {highlighted}{ANSIColors.RESET}")
+                else:
+                    result.append(f"{ANSIColors.BRIGHT_BLACK}  {content}{ANSIColors.RESET}")
 
         return '\n'.join(result)
 
