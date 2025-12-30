@@ -1,0 +1,7 @@
+setup.py
+agentic_layer.egg-info/PKG-INFO
+agentic_layer.egg-info/SOURCES.txt
+agentic_layer.egg-info/dependency_links.txt
+agentic_layer.egg-info/entry_points.txt
+agentic_layer.egg-info/requires.txt
+agentic_layer.egg-info/top_level.txt
