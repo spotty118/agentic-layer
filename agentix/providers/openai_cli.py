@@ -170,24 +170,8 @@ class OpenAICLIProvider(AIProvider):
 
     def get_available_models(self) -> List[Dict[str, Any]]:
         """Get list of available OpenAI models for CLI"""
-        try:
-            # Try to fetch models from CLI if it supports a list command
-            result = subprocess.run(
-                [self.cli_command, "models", "list"],
-                capture_output=True,
-                text=True,
-                timeout=10
-            )
-
-            if result.returncode == 0:
-                # Parse the output (format depends on CLI implementation)
-                # For now, return static list
-                pass
-        except:
-            pass
-
-        # Return known OpenAI models
-        return [
+        # Default known OpenAI models
+        default_models = [
             {
                 "id": "codex-5.2-medium",
                 "name": "Codex 5.2 Medium",
@@ -219,3 +203,89 @@ class OpenAICLIProvider(AIProvider):
                 "description": "Efficient O3 variant"
             },
         ]
+
+        try:
+            # Try to fetch models from CLI if it supports a list command
+            result = subprocess.run(
+                [self.cli_command, "models", "list"],
+                capture_output=True,
+                text=True,
+                timeout=10
+            )
+
+            if result.returncode == 0 and result.stdout.strip():
+                # Try parsing as JSON first
+                try:
+                    models_data = json.loads(result.stdout)
+
+                    # Handle different JSON formats
+                    if isinstance(models_data, list):
+                        # Direct list of models
+                        parsed_models = []
+                        for model in models_data:
+                            if isinstance(model, dict):
+                                parsed_models.append({
+                                    "id": model.get("id", model.get("name", "unknown")),
+                                    "name": model.get("name", model.get("id", "Unknown")),
+                                    "description": model.get("description", model.get("capabilities", ""))
+                                })
+                            elif isinstance(model, str):
+                                # Just model IDs
+                                parsed_models.append({
+                                    "id": model,
+                                    "name": model,
+                                    "description": ""
+                                })
+
+                        if parsed_models:
+                            return parsed_models
+
+                    elif isinstance(models_data, dict) and "data" in models_data:
+                        # OpenAI API format with "data" key
+                        parsed_models = []
+                        for model in models_data["data"]:
+                            parsed_models.append({
+                                "id": model.get("id", "unknown"),
+                                "name": model.get("id", "Unknown"),
+                                "description": f"Created: {model.get('created', 'N/A')}"
+                            })
+
+                        if parsed_models:
+                            return parsed_models
+
+                except json.JSONDecodeError:
+                    # Not JSON, try parsing as plain text
+                    lines = result.stdout.strip().split('\n')
+                    parsed_models = []
+
+                    for line in lines:
+                        line = line.strip()
+                        if line and not line.startswith('#') and not line.startswith('-'):
+                            # Extract model ID (first word or column)
+                            parts = line.split()
+                            if parts:
+                                model_id = parts[0]
+                                # Skip headers
+                                if model_id.lower() not in ['model', 'id', 'name']:
+                                    parsed_models.append({
+                                        "id": model_id,
+                                        "name": model_id,
+                                        "description": " ".join(parts[1:]) if len(parts) > 1 else ""
+                                    })
+
+                    if parsed_models:
+                        return parsed_models
+
+        except subprocess.TimeoutExpired:
+            # CLI took too long, fall back to defaults
+            pass
+        except FileNotFoundError:
+            # CLI not installed, fall back to defaults
+            pass
+        except Exception as e:
+            # Unexpected error, log and fall back to defaults
+            # Don't fail, just use defaults
+            pass
+
+        # Return default models if dynamic fetching failed
+        return default_models

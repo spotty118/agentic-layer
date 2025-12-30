@@ -74,18 +74,123 @@ class Orchestrator:
         else:
             ColoredOutput.warning("Agentic layer already initialized.")
 
-    def _get_codebase_context(self):
-        # Simple file tree for now
-        context = "Codebase Structure:\n"
+    def _get_codebase_context(self, max_depth=4):
+        """
+        Generate structured codebase context with intelligent filtering.
+
+        Args:
+            max_depth: Maximum directory depth to traverse (default: 4)
+
+        Returns:
+            str: Formatted codebase structure with file categorization
+        """
+        # Directories to ignore
+        ignore_dirs = {
+            '.agent', '.git', '__pycache__', 'node_modules',
+            '.pytest_cache', '.mypy_cache', '.tox', 'venv',
+            'env', '.env', 'dist', 'build', '.egg-info',
+            '.idea', '.vscode', '.DS_Store'
+        }
+
+        # File extensions to ignore
+        ignore_extensions = {
+            '.pyc', '.pyo', '.pyd', '.so', '.dll', '.dylib',
+            '.class', '.o', '.obj', '.log', '.lock'
+        }
+
+        # File type categorization
+        file_categories = {
+            'Python': ['.py', '.pyi', '.pyx'],
+            'JavaScript/TypeScript': ['.js', '.jsx', '.ts', '.tsx', '.mjs'],
+            'Web': ['.html', '.css', '.scss', '.sass', '.vue'],
+            'Config': ['.yaml', '.yml', '.json', '.toml', '.ini', '.cfg', '.conf'],
+            'Documentation': ['.md', '.rst', '.txt', '.adoc'],
+            'Data': ['.csv', '.parquet', '.pkl', '.h5', '.db', '.sqlite'],
+        }
+
+        context = "=== Codebase Structure ===\n\n"
+        file_stats = {cat: 0 for cat in file_categories}
+        file_stats['Other'] = 0
+        total_files = 0
+
+        # Build tree structure
+        tree_lines = []
+
         for root, dirs, files in os.walk(self.root_dir):
-            if ".agent" in root or ".git" in root:
+            # Calculate depth
+            rel_path = os.path.relpath(root, self.root_dir)
+            if rel_path == '.':
+                level = 0
+            else:
+                level = rel_path.count(os.sep) + 1
+
+            # Skip if too deep
+            if level > max_depth:
+                dirs[:] = []  # Don't descend further
                 continue
-            level = root.replace(self.root_dir, '').count(os.sep)
-            indent = ' ' * 4 * (level)
-            context += f"{indent}{os.path.basename(root)}/\n"
-            subindent = ' ' * 4 * (level + 1)
-            for f in files:
-                context += f"{subindent}{f}\n"
+
+            # Filter out ignored directories
+            dirs[:] = [d for d in dirs if d not in ignore_dirs and not d.startswith('.')]
+
+            # Skip if this is an ignored directory
+            if any(ignored in root for ignored in ignore_dirs):
+                continue
+
+            # Format directory name
+            indent = '  ' * level
+            dir_name = os.path.basename(root) or os.path.basename(self.root_dir)
+
+            if level == 0:
+                tree_lines.append(f"{dir_name}/")
+            else:
+                tree_lines.append(f"{indent}├── {dir_name}/")
+
+            # Process files
+            file_indent = '  ' * (level + 1)
+            filtered_files = []
+
+            for f in sorted(files):
+                # Skip ignored extensions
+                _, ext = os.path.splitext(f)
+                if ext in ignore_extensions or f.startswith('.'):
+                    continue
+
+                filtered_files.append(f)
+                total_files += 1
+
+                # Categorize file
+                categorized = False
+                for category, extensions in file_categories.items():
+                    if ext in extensions:
+                        file_stats[category] += 1
+                        categorized = True
+                        break
+
+                if not categorized:
+                    file_stats['Other'] += 1
+
+            # Add files to tree (limit to prevent huge output)
+            for f in filtered_files[:20]:  # Max 20 files per directory
+                tree_lines.append(f"{file_indent}├── {f}")
+
+            if len(filtered_files) > 20:
+                tree_lines.append(f"{file_indent}├── ... ({len(filtered_files) - 20} more files)")
+
+        # Build final context
+        context += '\n'.join(tree_lines[:100])  # Limit total lines
+
+        if len(tree_lines) > 100:
+            context += f"\n\n... ({len(tree_lines) - 100} more lines)\n"
+
+        # Add file statistics
+        context += "\n\n=== File Statistics ===\n"
+        context += f"Total Files: {total_files}\n\n"
+
+        context += "By Type:\n"
+        for category, count in sorted(file_stats.items(), key=lambda x: x[1], reverse=True):
+            if count > 0:
+                context += f"  • {category}: {count}\n"
+
         return context
 
     def specify(self, prompt):
@@ -602,8 +707,15 @@ Followed by a human-readable checklist."""
 
         self.logger.print_recent_activity(limit=limit)
 
-    def rollback(self, task_id: int = None):
-        """Rollback the most recent task or a specific task."""
+    def rollback(self, task_id: int = None, backup_index: int = None, auto_confirm: bool = False):
+        """
+        Rollback to a previous backup.
+
+        Args:
+            task_id: Not used (reserved for future task-specific rollback)
+            backup_index: Index of backup to restore (1-based, None for interactive)
+            auto_confirm: Skip confirmation prompt (use with caution)
+        """
         ColoredOutput.header("\n--- ⏮️  Rollback ---\n")
 
         if not os.path.exists(self.backup_dir):
@@ -615,10 +727,97 @@ Followed by a human-readable checklist."""
             ColoredOutput.error("No backups found.")
             return
 
-        # For now, show available backups and guide user
-        ColoredOutput.info("Available backups:")
-        for i, backup in enumerate(backups[:10], 1):
-            print(f"  {i}. {backup}")
+        # Show available backups with details
+        ColoredOutput.info("Available backups:\n")
+        backup_info = []
 
-        ColoredOutput.warning("\nManual rollback: Copy files from .agent/backups/ to restore")
-        ColoredOutput.info("Automatic rollback coming in future version")
+        for i, backup in enumerate(backups[:20], 1):  # Show up to 20 backups
+            # Parse backup filename: {path}_{timestamp}.bak
+            try:
+                parts = backup.rsplit('_', 2)
+                if len(parts) >= 3:
+                    file_path = parts[0].replace('_', '/')
+                    timestamp = f"{parts[1]}_{parts[2].replace('.bak', '')}"
+                    # Format timestamp for readability
+                    from datetime import datetime
+                    try:
+                        dt = datetime.strptime(timestamp, "%Y%m%d_%H%M%S")
+                        readable_time = dt.strftime("%Y-%m-%d %H:%M:%S")
+                    except ValueError:
+                        readable_time = timestamp
+
+                    backup_info.append((i, backup, file_path, readable_time))
+                    print(f"  {i}. {file_path}")
+                    print(f"     Time: {readable_time}")
+                    print()
+                else:
+                    backup_info.append((i, backup, backup, "Unknown"))
+                    print(f"  {i}. {backup}")
+                    print()
+            except Exception:
+                backup_info.append((i, backup, backup, "Unknown"))
+                print(f"  {i}. {backup}")
+                print()
+
+        # Select backup to restore
+        if backup_index is None:
+            try:
+                selection = input(ColoredOutput.CYAN + "\nEnter backup number to restore (or 'q' to quit): " + ColoredOutput.RESET)
+                if selection.lower() == 'q':
+                    ColoredOutput.info("Rollback cancelled.")
+                    return
+
+                backup_index = int(selection)
+            except (ValueError, KeyboardInterrupt):
+                ColoredOutput.error("Invalid selection.")
+                return
+
+        if backup_index < 1 or backup_index > len(backup_info):
+            ColoredOutput.error(f"Invalid backup number. Must be between 1 and {len(backup_info)}.")
+            return
+
+        # Get selected backup
+        selected = backup_info[backup_index - 1]
+        backup_file = selected[1]
+        original_path = selected[2]
+
+        # Confirmation
+        if not auto_confirm:
+            ColoredOutput.warning(f"\n⚠️  This will restore: {original_path}")
+            ColoredOutput.warning(f"   From backup: {backup_file}")
+            ColoredOutput.warning("\n   Current file will be backed up first.")
+
+            confirm = input(ColoredOutput.YELLOW + "\nProceed with rollback? (yes/no): " + ColoredOutput.RESET)
+            if confirm.lower() not in ['yes', 'y']:
+                ColoredOutput.info("Rollback cancelled.")
+                return
+
+        # Perform rollback
+        try:
+            import shutil
+
+            backup_path = os.path.join(self.backup_dir, backup_file)
+            target_path = os.path.join(self.root_dir, original_path)
+
+            # Create backup of current file before rolling back
+            if os.path.exists(target_path):
+                self._create_backup(original_path)
+                ColoredOutput.info("Current file backed up before rollback.")
+
+            # Ensure target directory exists
+            target_dir = os.path.dirname(target_path)
+            if target_dir and not os.path.exists(target_dir):
+                os.makedirs(target_dir, exist_ok=True)
+
+            # Restore from backup
+            shutil.copy2(backup_path, target_path)
+            ColoredOutput.success(f"\n✅ Successfully restored: {original_path}")
+            ColoredOutput.info(f"   From: {backup_file}")
+
+            if self.logger:
+                self.logger.info(f"Rollback: Restored {original_path} from {backup_file}")
+
+        except Exception as e:
+            ColoredOutput.error(f"Rollback failed: {str(e)}")
+            if self.logger:
+                self.logger.error(f"Rollback failed: {str(e)}")
