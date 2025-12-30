@@ -5,7 +5,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setup(
     name="agentix",
-    version="1.1.0",
+    version="1.2.0",
     author="Agentix Team",
     description="Multi-AI spec-driven coding agent with unlimited provider support (Claude, OpenAI, Gemini, OpenRouter, Ollama, and more)",
     long_description=long_description,
