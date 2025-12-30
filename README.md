@@ -1,245 +1,322 @@
-# Agentic Layer
+# Agentix
 
-A spec-driven CLI tool that uses AI agents to help you implement features in your codebase through a structured workflow.
+**Multi-AI Spec-Driven Coding Agent**
 
-## Overview
+Agentix intelligently combines the strengths of **Claude**, **OpenAI Codex**, and **Gemini** to deliver the best spec-driven development experience. Each AI provider is automatically selected for tasks where it excels.
 
-Agentic Layer follows a deliberate, spec-driven development workflow:
+```
+┌─────────────────────────────────────────────────────────────┐
+│  Agentix - Intelligent Multi-AI Coding Agent                │
+│                                                              │
+│  📋 Claude      → Specs, Planning, Code Analysis            │
+│  ⚡ OpenAI      → Code Generation, Task Execution           │
+│  🚀 Gemini      → Fast Iterations, Large Context            │
+└─────────────────────────────────────────────────────────────┘
+```
 
-1. **Specify** - Generate a functional specification from your high-level goal
-2. **Plan** - Create a technical implementation plan
-3. **Tasks** - Break the plan into atomic, executable tasks
-4. **Work** - Execute tasks one at a time with AI assistance
-5. **Review** - Review and validate changes
-6. **Status** - Track progress at any time
+## Why Agentix?
 
-This approach ensures:
-- Clear documentation of intent (the "why")
-- Thoughtful technical design (the "how")
-- Incremental, traceable changes
-- Human oversight at each stage
+Traditional AI coding tools lock you into a single provider. **Agentix** intelligently routes tasks to the optimal AI based on:
+
+- **Task Type**: Specs routed to Claude, code generation to OpenAI Codex
+- **Context Size**: Massive codebases automatically use Gemini's 2M token window
+- **Speed Requirements**: Fast iterations leverage Gemini's low latency
+- **Code Understanding**: Complex refactoring uses Claude's superior analysis
+
+## Key Features
+
+### 🎯 Intelligent Provider Routing
+- **Automatic Selection**: Best AI chosen for each task type
+- **Configurable**: Override routing preferences per project
+- **Fallback Support**: Gracefully handles provider unavailability
+
+### 🏗️ Spec-Driven Workflow
+1. **Specify** - Generate functional specs (Claude-optimized)
+2. **Plan** - Create technical implementation plans (Claude-optimized)
+3. **Tasks** - Break into atomic tasks (Claude-optimized)
+4. **Work** - Execute with optimal provider (Multi-AI)
+5. **Review** - Validate changes with history tracking
+
+### 🤖 Multi-AI Integration
+
+| Provider | Strengths | Best For |
+|----------|-----------|----------|
+| **Claude** | Long context (200K tokens), Superior reasoning, Precise instructions | Specifications, Planning, Refactoring, Code Review |
+| **OpenAI Codex** | Excellent code generation, Fast inference, Broad knowledge | Code Generation, Task Execution, Problem Solving |
+| **Gemini** | Ultra-long context (2M tokens), Lightning fast, Multimodal | Large Codebases, Fast Iterations, Rapid Prototyping |
+
+### 🛡️ Safety & Control
+- Automatic file backups before modifications
+- Interactive confirmation prompts
+- Rollback capabilities
+- Comprehensive logging and history
 
 ## Installation
 
 ```bash
-pip install -e .
-```
-
-Set your OpenAI API key:
-```bash
-export OPENAI_API_KEY='your-api-key-here'
+pip install agentix
 ```
 
 ## Quick Start
 
 ```bash
-# 1. Initialize in your codebase
-agent init
+# 1. Set up API keys (you need at least one)
+export ANTHROPIC_API_KEY='your-claude-key'
+export OPENAI_API_KEY='your-openai-key'
+export GOOGLE_API_KEY='your-gemini-key'
 
-# 2. Specify what you want to build
-agent specify "Add user authentication with JWT tokens"
-
-# 3. Generate a technical plan
-agent plan
-
-# 4. Break it into tasks
-agent tasks
-
-# 5. Execute tasks one by one
-agent work
-agent work  # Run again for next task
-
-# 6. Check progress
-agent status
-```
-
-## Commands
-
-### `agent init`
-Initialize the agentic layer in your codebase. Creates a `.agent/` directory to store specs, plans, and tasks.
-
-### `agent specify <prompt>`
-Generate a functional specification based on your high-level goal.
-
-**Example:**
-```bash
-agent specify "Add a REST API endpoint for user profile updates"
-```
-
-Creates `.agent/spec.md` with:
-- Goal and user stories
-- Acceptance criteria
-- Edge cases
-
-### `agent plan`
-Generate a technical implementation plan from the specification.
-
-Creates `.agent/plan.md` with:
-- Architecture overview
-- File changes needed
-- Dependencies
-- Testing strategy
-
-### `agent tasks`
-Break the technical plan into executable tasks.
-
-Creates `.agent/tasks.md` with:
-- YAML-structured task list
-- Task metadata (action type, file paths, status)
-- Human-readable checklist
-
-### `agent work`
-Execute the next pending task using AI assistance.
-
-- Reads context files
-- Generates code changes
-- Updates task status automatically
-
-### `agent review`
-Review generated changes before committing (coming soon).
-
-### `agent status`
-Show current progress and state of all artifacts.
-
-## Workflow Example
-
-Let's implement a new feature end-to-end:
-
-```bash
-# Initialize
+# 2. Initialize in your project
 cd my-project
-agent init
+agentix init
 
-# Specify the feature
-agent specify "Add rate limiting to the API to prevent abuse"
+# 3. Specify what you want to build
+agentix specify "Add JWT authentication to the API"
 
-# Review the spec
-cat .agent/spec.md
+# 4. Generate technical plan
+agentix plan
 
-# Generate implementation plan
-agent plan
+# 5. Break into tasks
+agentix tasks
 
-# Review the plan
-cat .agent/plan.md
+# 6. Execute tasks (automatically routes to best AI)
+agentix work  # Task 1
+agentix work  # Task 2
+agentix work  # Task 3...
 
-# Break into tasks
-agent tasks
+# 7. Review changes
+agentix review
 
-# Execute tasks
-agent work    # Implements task 1
-agent status  # Check progress
-agent work    # Implements task 2
-agent work    # Implements task 3
-
-# Continue until all tasks complete
-```
-
-## Project Structure
-
-```
-your-project/
-├── .agent/
-│   ├── spec.md       # Functional specification
-│   ├── plan.md       # Technical implementation plan
-│   ├── tasks.md      # Executable task list
-│   ├── config.yaml   # Configuration (optional)
-│   └── history/      # Execution logs (coming soon)
-└── ... your code ...
+# 8. Check status
+agentix status
 ```
 
 ## Configuration
 
-Create `.agent/config.yaml` to customize behavior:
+Create `.agent/config.yaml` to customize AI provider usage:
 
 ```yaml
-model: gpt-4.1-mini
-max_context_files: 10
-auto_commit: false
+providers:
+  # Enable/disable providers
+  claude:
+    enabled: true
+    default_model: claude-3-5-sonnet-20241022
+
+  openai:
+    enabled: true
+    default_model: gpt-4.1-mini
+
+  gemini:
+    enabled: true
+    default_model: gemini-1.5-flash
+
+  routing:
+    strategy: intelligent  # intelligent | preferred | round_robin
+
+    # Override routing for specific tasks
+    task_routing:
+      specification: claude     # Claude best for specs
+      planning: claude          # Claude best for planning
+      tasks: claude             # Claude best for task breakdown
+      code_generation: openai   # Codex excellent for code
+      task_execution: gemini    # Gemini fastest
+      refactoring: claude       # Claude understands code best
+      review: claude            # Claude best for analysis
+
+# General settings
+temperature: 0.7
+max_tokens: 4096
 require_confirmation: true
+auto_commit: false
+
+logging:
+  enabled: true
+  level: INFO
+  save_history: true
 ```
 
-## Task Format
+## Provider Selection Strategy
 
-Tasks in `tasks.md` follow this structure:
+Agentix uses intelligent routing to select the optimal AI:
 
+### 1. **Task-Based Routing** (Default)
+```bash
+# Specification → Claude (superior reasoning)
+agentix specify "Add rate limiting"
+
+# Planning → Claude (architectural thinking)
+agentix plan
+
+# Code Generation → OpenAI Codex (code expertise)
+agentix work
+
+# Large Context → Gemini (2M token window)
+agentix specify "Refactor entire microservices architecture"
+```
+
+### 2. **Manual Override**
 ```yaml
-tasks:
-  - id: 1
-    description: "Create middleware for rate limiting"
-    status: pending  # pending | completed | failed
-    action: create_file  # create_file | edit_file | delete_file | run_command
-    path: "src/middleware/rateLimit.js"
-    context_files:
-      - "src/app.js"
-      - "package.json"
+# Force all tasks to use Claude
+providers:
+  routing:
+    preferred_provider: claude
 ```
 
-## Supported Task Actions
+### 3. **Per-Task Override**
+```yaml
+providers:
+  routing:
+    task_routing:
+      code_generation: gemini  # Use Gemini for speed
+```
 
-- `create_file` - Create a new file
-- `edit_file` - Modify an existing file
-- `delete_file` - Remove a file
-- `run_command` - Execute a shell command
+## Commands
+
+| Command | Description | Default AI |
+|---------|-------------|-----------|
+| `agentix init` | Initialize Agentix | - |
+| `agentix specify <goal>` | Generate specification | Claude |
+| `agentix plan` | Create implementation plan | Claude |
+| `agentix tasks` | Break into executable tasks | Claude |
+| `agentix work` | Execute next task | Intelligent |
+| `agentix status` | Show progress | - |
+| `agentix review` | Review recent changes | - |
+| `agentix history` | View execution history | - |
+| `agentix rollback` | Show available backups | - |
+
+## Real-World Example
+
+```bash
+# Large codebase refactoring with Gemini's massive context
+cd my-monorepo
+agentix init
+
+# Gemini handles 2M tokens easily
+agentix specify "Migrate all 500 microservices from REST to gRPC"
+
+# Claude plans the architecture
+agentix plan
+
+# Claude breaks into atomic tasks
+agentix tasks
+
+# Tasks auto-route to best provider:
+# - File changes → OpenAI Codex
+# - Large file analysis → Gemini
+# - Complex refactoring → Claude
+agentix work  # Repeats until done
+
+# Claude reviews all changes
+agentix review
+```
+
+## Provider Comparison
+
+### When to Use Each AI
+
+**Use Claude when:**
+- Writing specifications and requirements
+- Planning complex architectures
+- Refactoring existing code
+- Reviewing code for quality and bugs
+- Long reasoning chains needed
+
+**Use OpenAI Codex when:**
+- Generating new code from scratch
+- Quick task execution
+- General problem solving
+- Function implementations
+
+**Use Gemini when:**
+- Handling large codebases (>100K tokens)
+- Need ultra-fast responses
+- Iterating rapidly on prototypes
+- Processing multimodal inputs
 
 ## Advanced Usage
 
-### Manual Task Editing
-You can manually edit `.agent/tasks.md` to:
-- Reorder tasks
-- Add custom tasks
-- Update task descriptions
-- Mark tasks as completed/pending
+### Multi-Provider Fallback
 
-### Custom Prompts
-Modify the system prompts by editing `orchestrator.py` or use configuration overrides.
+If your preferred provider is unavailable, Agentix automatically falls back:
 
-### Multiple Features
-You can maintain multiple specs by creating separate directories:
-```bash
-mkdir -p .agent/features/auth
-mkdir -p .agent/features/api
+```python
+# Routing preference: Claude → OpenAI → Gemini
+# If Claude fails, tries OpenAI, then Gemini
 ```
+
+### Provider Info
+
+```bash
+# See available providers
+agentix status
+
+# Output shows:
+#   ✓ Initialized 3 AI providers
+#   - claude (200K context)
+#   - openai (128K context)
+#   - gemini (2M context)
+```
+
+### Custom Prompts per Provider
+
+```yaml
+prompts:
+  specify: |
+    You are a product manager using {provider}.
+    Generate a spec optimized for {provider}'s strengths.
+```
+
+## Architecture
+
+```
+Agentix
+├── Orchestrator        # Workflow management
+├── Provider Router     # Intelligent AI selection
+│   ├── Claude Provider
+│   ├── OpenAI Provider
+│   └── Gemini Provider
+├── Config Manager      # Multi-provider configuration
+├── Validator           # Safety checks
+└── Logger              # History tracking
+```
+
+## Requirements
+
+- Python 3.8+
+- At least one AI provider API key:
+  - `ANTHROPIC_API_KEY` for Claude
+  - `OPENAI_API_KEY` for OpenAI/Codex
+  - `GOOGLE_API_KEY` for Gemini
 
 ## Best Practices
 
-1. **Review Before Executing** - Always review `spec.md` and `plan.md` before running `tasks`
-2. **Commit Frequently** - Commit after each successful task execution
-3. **Test As You Go** - Run tests after critical tasks
-4. **Provide Context** - The more context in your `specify` prompt, the better
-5. **Iterate** - Re-run `plan` or `tasks` if the output isn't quite right
-
-## Troubleshooting
-
-**Tasks not executing correctly?**
-- Check that context files exist
-- Verify the task action matches the file state
-- Review the generated plan for clarity
-
-**LLM outputting markdown instead of raw code?**
-- The tool automatically strips code fences
-- If issues persist, try regenerating with `agent tasks`
-
-**Want to start over?**
-```bash
-rm -rf .agent/
-agent init
-```
+1. **Use all three providers** for optimal results
+2. **Let intelligent routing decide** unless you have specific needs
+3. **Configure task routing** for your project's specific requirements
+4. **Monitor provider usage** via history logs
+5. **Keep confirmation prompts enabled** for safety
 
 ## Roadmap
 
-- [ ] Add `agent review` for change validation
-- [ ] Add rollback/undo capabilities
-- [ ] Enhanced logging and history
-- [ ] Interactive mode with confirmations
-- [ ] Support for other LLM providers (Anthropic, etc.)
-- [ ] Plugin system for custom actions
-- [ ] Web UI for visualization
-- [ ] Multi-agent collaboration
+- [ ] Azure OpenAI support
+- [ ] Local model integration (Ollama, etc.)
+- [ ] Cost tracking per provider
+- [ ] A/B testing between providers
+- [ ] Custom provider plugins
+- [ ] Web UI for provider analytics
 
 ## Contributing
 
-This is an early-stage tool. Contributions welcome!
+See [CONTRIBUTING.md](CONTRIBUTING.md)
 
 ## License
 
-MIT
+MIT - See [LICENSE](LICENSE)
+
+## Credits
+
+Built with ❤️ by the Agentix Team
+
+Powered by:
+- Anthropic Claude
+- OpenAI GPT-4 / Codex
+- Google Gemini

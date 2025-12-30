@@ -37,7 +37,7 @@ coverage.xml
 *~
 .DS_Store
 
-# Agentic Layer
+.agent
 .agent/
 
 # Environment

@@ -3,7 +3,6 @@ import yaml
 from typing import Dict, Any, Optional
 
 DEFAULT_CONFIG = {
-    "model": "gpt-4.1-mini",
     "max_context_files": 10,
     "auto_commit": False,
     "require_confirmation": True,
@@ -13,6 +12,36 @@ DEFAULT_CONFIG = {
         "enabled": True,
         "level": "INFO",
         "save_history": True
+    },
+    "providers": {
+        "claude": {
+            "enabled": True,
+            "api_key": None,  # Uses ANTHROPIC_API_KEY env var if not set
+            "default_model": "claude-3-5-sonnet-20241022"
+        },
+        "openai": {
+            "enabled": True,
+            "api_key": None,  # Uses OPENAI_API_KEY env var if not set
+            "default_model": "gpt-4.1-mini"
+        },
+        "gemini": {
+            "enabled": True,
+            "api_key": None,  # Uses GOOGLE_API_KEY env var if not set
+            "default_model": "gemini-1.5-flash"
+        },
+        "routing": {
+            "strategy": "intelligent",  # intelligent | preferred | round_robin
+            "preferred_provider": None,  # Set to force a specific provider
+            "task_routing": {
+                "specification": "claude",  # Best for specs
+                "planning": "claude",  # Best for planning
+                "tasks": "claude",  # Best for task breakdown
+                "code_generation": "openai",  # Codex excellence
+                "task_execution": "gemini",  # Fast execution
+                "refactoring": "claude",  # Best code understanding
+                "review": "claude"  # Best analysis
+            }
+        }
     },
     "prompts": {
         "specify": "You are a product manager. Generate a functional specification (spec.md) based on the user's goal and codebase context. Focus on 'what' and 'why'. Use sections: Goal, User Stories, Acceptance Criteria, Edge Cases.",
@@ -92,10 +121,6 @@ class Config:
             config = config[k]
         config[keys[-1]] = value
 
-    def get_model(self) -> str:
-        """Get the AI model to use."""
-        return os.getenv("AGENT_MODEL", self.get("model", "gpt-4.1-mini"))
-
     def get_temperature(self) -> float:
         """Get the temperature for AI completions."""
         return float(os.getenv("AGENT_TEMPERATURE", self.get("temperature", 0.7)))
@@ -132,3 +157,23 @@ class Config:
         """Create a default config.yaml file."""
         self.config = DEFAULT_CONFIG.copy()
         self.save()
+
+    def get_providers_config(self) -> Dict[str, Any]:
+        """Get providers configuration."""
+        return self.get("providers", DEFAULT_CONFIG["providers"])
+
+    def get_routing_strategy(self) -> str:
+        """Get the routing strategy."""
+        return self.get("providers.routing.strategy", "intelligent")
+
+    def get_preferred_provider(self) -> Optional[str]:
+        """Get the preferred provider if set."""
+        return self.get("providers.routing.preferred_provider")
+
+    def get_task_routing(self, task_type: str) -> Optional[str]:
+        """Get the preferred provider for a specific task type."""
+        return self.get(f"providers.routing.task_routing.{task_type}")
+
+    def is_provider_enabled(self, provider_name: str) -> bool:
+        """Check if a provider is enabled."""
+        return self.get(f"providers.{provider_name}.enabled", False)

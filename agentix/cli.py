@@ -5,15 +5,15 @@ from .orchestrator import Orchestrator
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Agentic Layer: A spec-driven CLI for codebase operations.",
-        epilog="For more information, visit the documentation or run: agent <command> --help"
+        description="Agentix: Multi-AI spec-driven coding agent (Claude + OpenAI Codex + Gemini)",
+        epilog="For more information, visit the documentation or run: agentix <command> --help"
     )
     subparsers = parser.add_subparsers(dest="command", help="Available commands")
 
     # init
     subparsers.add_parser(
         "init",
-        help="Initialize the agentic layer in the current codebase."
+        help="Initialize Agentix in the current codebase."
     )
 
     # specify

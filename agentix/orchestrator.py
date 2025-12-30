@@ -1,10 +1,10 @@
 import os
 import yaml
 import subprocess
-from openai import OpenAI
 from .config import Config
 from .validators import Validator, ValidationError, safe_file_operation
 from .logger import AgentLogger, ColoredOutput
+from .providers.router import ProviderRouter
 
 class Orchestrator:
     def __init__(self, root_dir):
@@ -18,6 +18,8 @@ class Orchestrator:
         # Initialize configuration and logging
         self.config = Config(self.agent_dir) if os.path.exists(self.agent_dir) else None
         self.logger = None
+        self.router = None
+
         if self.config:
             self.logger = AgentLogger(
                 self.agent_dir,
@@ -25,7 +27,14 @@ class Orchestrator:
                 level=self.config.get_log_level()
             )
 
-        self.client = OpenAI()  # Uses pre-configured environment variables
+            # Initialize AI provider router
+            try:
+                providers_config = self.config.get_providers_config()
+                self.router = ProviderRouter(config={"providers": providers_config})
+                ColoredOutput.success(f"Initialized {len(self.router.get_available_providers())} AI providers")
+            except Exception as e:
+                ColoredOutput.error(f"Failed to initialize AI providers: {str(e)}")
+                raise
 
     def init(self):
         if not os.path.exists(self.agent_dir):
@@ -74,19 +83,23 @@ class Orchestrator:
         system_prompt = self.config.get_prompt("specify") if self.config else \
             "You are a product manager. Generate a functional specification (spec.md) based on the user's goal and codebase context. Focus on 'what' and 'why'. Use sections: Goal, User Stories, Acceptance Criteria, Edge Cases."
 
-        model = self.config.get_model() if self.config else "gpt-4.1-mini"
+        # Get preferred provider for specification task
+        preferred_provider = self.config.get_task_routing("specification") if self.config else None
 
         try:
-            response = self.client.chat.completions.create(
-                model=model,
+            # Use router to intelligently select provider
+            spec_content, used_provider = self.router.complete(
                 messages=[
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": f"Goal: {prompt}\n\nCodebase Context:\n{context}"}
                 ],
+                task_type="specification",
                 temperature=self.config.get_temperature() if self.config else 0.7,
-                max_tokens=self.config.get_max_tokens() if self.config else 4096
+                max_tokens=self.config.get_max_tokens() if self.config else 4096,
+                preferred_provider=preferred_provider
             )
-            spec_content = response.choices[0].message.content
+
+            ColoredOutput.info(f"Used AI provider: {used_provider}")
 
             with open(self.spec_path, "w") as f:
                 f.write(spec_content)
@@ -100,7 +113,7 @@ class Orchestrator:
 
             if self.logger:
                 self.logger.log_spec_generation(prompt, spec_content)
-                self.logger.info("Spec generation completed")
+                self.logger.info(f"Spec generation completed using {used_provider}")
 
         except Exception as e:
             ColoredOutput.error(f"Error generating specification: {str(e)}")
@@ -132,19 +145,23 @@ class Orchestrator:
         system_prompt = self.config.get_prompt("plan") if self.config else \
             "You are a software architect. Generate a technical implementation plan (plan.md) based on the functional specification and codebase context. Focus on 'how'. Use sections: Architecture Overview, File Changes, Dependencies, Testing Strategy."
 
-        model = self.config.get_model() if self.config else "gpt-4.1-mini"
+        # Get preferred provider for planning task
+        preferred_provider = self.config.get_task_routing("planning") if self.config else None
 
         try:
-            response = self.client.chat.completions.create(
-                model=model,
+            # Use router to intelligently select provider
+            plan_content, used_provider = self.router.complete(
                 messages=[
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": f"Specification:\n{spec}\n\nCodebase Context:\n{context}"}
                 ],
+                task_type="planning",
                 temperature=self.config.get_temperature() if self.config else 0.7,
-                max_tokens=self.config.get_max_tokens() if self.config else 4096
+                max_tokens=self.config.get_max_tokens() if self.config else 4096,
+                preferred_provider=preferred_provider
             )
-            plan_content = response.choices[0].message.content
+
+            ColoredOutput.info(f"Used AI provider: {used_provider}")
 
             with open(self.plan_path, "w") as f:
                 f.write(plan_content)
@@ -158,7 +175,7 @@ class Orchestrator:
 
             if self.logger:
                 self.logger.log_plan_generation(plan_content)
-                self.logger.info("Plan generation completed")
+                self.logger.info(f"Plan generation completed using {used_provider}")
 
         except Exception as e:
             ColoredOutput.error(f"Error generating plan: {str(e)}")
@@ -200,22 +217,28 @@ tasks:
 ---
 Followed by a human-readable checklist."""
 
-        model = self.config.get_model() if self.config else "gpt-4.1-mini"
+        # Get preferred provider for tasks task
+        preferred_provider = self.config.get_task_routing("tasks") if self.config else None
 
         try:
-            response = self.client.chat.completions.create(
-                model=model,
+            # Use router to intelligently select provider
+            tasks_content, used_provider = self.router.complete(
                 messages=[
                     {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": f"Technical Plan:\n{plan}"}
+                    {"role": "user", "content": f"Technical Plan:
+{plan}"}
                 ],
+                task_type="tasks",
                 temperature=self.config.get_temperature() if self.config else 0.7,
-                max_tokens=self.config.get_max_tokens() if self.config else 4096
+                max_tokens=self.config.get_max_tokens() if self.config else 4096,
+                preferred_provider=preferred_provider
             )
-            tasks_content = response.choices[0].message.content
+
+            ColoredOutput.info(f"Used AI provider: {used_provider}")
+            tasks_content_to_save = tasks_content
 
             with open(self.tasks_path, "w") as f:
-                f.write(tasks_content)
+                f.write(tasks_content_to_save)
 
             ColoredOutput.success(f"Tasks saved to {self.tasks_path}")
 
@@ -230,7 +253,7 @@ Followed by a human-readable checklist."""
 
             if self.logger:
                 self.logger.log_tasks_generation(num_tasks)
-                self.logger.info("Tasks generation completed")
+                self.logger.info(f"Tasks generation completed using {used_provider}")
 
         except Exception as e:
             ColoredOutput.error(f"Error generating tasks: {str(e)}")
@@ -403,21 +426,25 @@ Followed by a human-readable checklist."""
             path=task['path']
         )
 
-        model = self.config.get_model() if self.config else "gpt-4.1-mini"
+        # Get preferred provider for code generation task
+        preferred_provider = self.config.get_task_routing("code_generation") if self.config else None
 
         ColoredOutput.info("Generating file content...")
 
-        response = self.client.chat.completions.create(
-            model=model,
+        # Use router to intelligently select provider
+        new_content, used_provider = self.router.complete(
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": f"Context Files:\n{context_content}\n\nTarget File Current Content:\n{target_file_content}"}
             ],
+            task_type="code_generation",
             temperature=self.config.get_temperature() if self.config else 0.7,
-            max_tokens=self.config.get_max_tokens() if self.config else 4096
+            max_tokens=self.config.get_max_tokens() if self.config else 4096,
+            preferred_provider=preferred_provider
         )
 
-        new_content = response.choices[0].message.content.strip()
+        ColoredOutput.info(f"Used AI provider: {used_provider}")
+        new_content = new_content.strip()
 
         # Clean up potential markdown code blocks
         if new_content.startswith("```"):
