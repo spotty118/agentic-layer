@@ -34,22 +34,22 @@ DEFAULT_CONFIG = {
         "claude": {
             "enabled": True,
             "api_key": None,  # Uses ANTHROPIC_API_KEY env var if not set
-            "default_model": "claude-3-5-sonnet-20241022"
+            "default_model": "claude-sonnet-4-20250514"  # Latest Sonnet 4 (Dec 2025)
         },
         "openai": {
             "enabled": True,
             "api_key": None,  # Uses OPENAI_API_KEY env var if not set
-            "default_model": "gpt-4.1-mini"
+            "default_model": "gpt-4o"  # Latest GPT-4o (Dec 2025)
         },
         "gemini": {
             "enabled": True,
             "api_key": None,  # Uses GOOGLE_API_KEY env var if not set
-            "default_model": "gemini-1.5-flash"
+            "default_model": "gemini-2.0-flash-exp"  # Gemini 2.0 (Dec 2025)
         },
         "openrouter": {
             "enabled": False,  # Set to True to use OpenRouter
             "api_key": None,  # Uses OPENROUTER_API_KEY env var if not set
-            "default_model": "anthropic/claude-3.5-sonnet",
+            "default_model": "anthropic/claude-sonnet-4-20250514",  # Latest via OpenRouter
             "site_url": None,  # Optional: your site URL
             "site_name": None  # Optional: your app name
         },

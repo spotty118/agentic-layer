@@ -124,15 +124,15 @@ providers:
   # Enable/disable providers
   claude:
     enabled: true
-    default_model: claude-3-5-sonnet-20241022
+    default_model: claude-sonnet-4-20250514  # Latest Sonnet 4 (Dec 2025)
 
   openai:
     enabled: true
-    default_model: gpt-4.1-mini
+    default_model: gpt-4o  # Latest GPT-4o (Dec 2025)
 
   gemini:
     enabled: true
-    default_model: gemini-1.5-flash
+    default_model: gemini-2.0-flash-exp  # Gemini 2.0 (Dec 2025)
 
   routing:
     strategy: intelligent  # intelligent | preferred | round_robin
@@ -207,6 +207,66 @@ providers:
 | `agentix review` | Review recent changes | - |
 | `agentix history` | View execution history | - |
 | `agentix rollback` | Show available backups | - |
+| `agentix diff [file]` | View file diffs | - |
+
+## Diff Viewing & Editing
+
+Agentix includes powerful diff capabilities to review changes before and after they're applied:
+
+### Interactive Diff Preview (During Work)
+When `require_confirmation: true` in config, you'll automatically see diffs before file changes:
+
+```bash
+agentix work
+
+# Output:
+📊 Preview of changes to src/api/auth.py:
+
+--- a/src/api/auth.py
++++ b/src/api/auth.py
+@@ -10,7 +10,10 @@
+ def authenticate(username, password):
+-    # TODO: Implement authentication
+-    pass
++    user = User.query.filter_by(username=username).first()
++    if user and user.check_password(password):
++        return generate_token(user)
++    return None
+
++15 -2 lines changed
+
+Apply these changes? (y/n):
+```
+
+### Manual Diff Viewing
+View diffs for any file at any time:
+
+```bash
+# View diff against most recent backup
+agentix diff src/api/auth.py
+
+# View unified diff (default)
+agentix diff src/api/auth.py --type unified
+
+# View side-by-side diff
+agentix diff src/api/auth.py --type side-by-side
+
+# Compare with specific backup (0 = most recent)
+agentix diff src/api/auth.py --backup 1
+
+# Compare two arbitrary files
+agentix diff file1.py --compare file2.py
+
+# Interactive file selection
+agentix diff
+```
+
+### Diff Features
+- **Unified Diff**: Standard git-style diff with +/- lines
+- **Side-by-Side**: Visual comparison with color highlighting
+- **Statistics**: Shows line additions/deletions count
+- **Backup History**: Compare against any previous version
+- **Color Coding**: Red for deletions, green for additions
 
 ## Real-World Example
 
