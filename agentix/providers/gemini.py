@@ -134,3 +134,49 @@ class GeminiProvider(AIProvider):
             "large_context": "gemini-3.0-pro-high",  # Handles massive context
         }
         return task_models.get(task_type, self.default_model)
+
+    def get_available_models(self) -> List[Dict[str, Any]]:
+        """Get list of available Gemini models"""
+        try:
+            genai = self.get_client()
+            # Fetch models from Gemini API
+            models = []
+            for model in genai.list_models():
+                # Filter for generative models only
+                if 'generateContent' in model.supported_generation_methods:
+                    models.append({
+                        "id": model.name.replace('models/', ''),
+                        "name": model.display_name,
+                        "description": getattr(model, 'description', '')
+                    })
+            return models
+
+        except Exception as e:
+            # Fallback to known models if API call fails
+            return [
+                {
+                    "id": "gemini-3.0-pro-high",
+                    "name": "Gemini 3.0 Pro High",
+                    "description": "Latest Gemini 3.0 Pro - best quality"
+                },
+                {
+                    "id": "gemini-3.0-pro-low",
+                    "name": "Gemini 3.0 Pro Low",
+                    "description": "Latest Gemini 3.0 Pro - faster responses"
+                },
+                {
+                    "id": "gemini-2.0-flash-exp",
+                    "name": "Gemini 2.0 Flash Experimental",
+                    "description": "Experimental fast model"
+                },
+                {
+                    "id": "gemini-1.5-pro",
+                    "name": "Gemini 1.5 Pro",
+                    "description": "2M token context window"
+                },
+                {
+                    "id": "gemini-1.5-flash",
+                    "name": "Gemini 1.5 Flash",
+                    "description": "Fast and efficient"
+                },
+            ]

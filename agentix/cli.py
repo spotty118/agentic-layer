@@ -122,9 +122,27 @@ def main():
 
     models_parser = subparsers.add_parser(
         "models",
-        help="🤖 List available models for providers"
+        help="🤖 Manage models for providers"
     )
-    models_parser.add_argument(
+    models_subparsers = models_parser.add_subparsers(dest="models_command")
+
+    # List models
+    list_models_parser = models_subparsers.add_parser(
+        "list",
+        help="List available models for a provider"
+    )
+    list_models_parser.add_argument(
+        "provider_name",
+        nargs="?",
+        help="Provider name (interactive if not specified)"
+    )
+
+    # Select model
+    select_model_parser = models_subparsers.add_parser(
+        "select",
+        help="Interactively select a model for a provider"
+    )
+    select_model_parser.add_argument(
         "provider_name",
         nargs="?",
         help="Provider name (interactive if not specified)"
@@ -283,8 +301,7 @@ def main():
             handle_providers_command(args, orchestrator)
 
         elif args.command == "models":
-            model_commands = ModelCommands(orchestrator)
-            model_commands.list_models(args.provider_name)
+            handle_models_command(args, orchestrator)
 
         elif args.command == "context":
             handle_context_command(args, orchestrator)
@@ -328,9 +345,10 @@ Supports unlimited AI providers:
   🏠 Ollama - Local models (free, private)
 
 Get started:
-  agentix setup      Interactive setup wizard
-  agentix providers  Manage AI providers
-  agentix specify    Start a new project
+  agentix setup         Interactive setup wizard
+  agentix providers     Manage AI providers
+  agentix models select Interactive model selection 🆕
+  agentix specify       Start a new project
 
 """)
 
@@ -363,13 +381,26 @@ def handle_providers_command(args, orchestrator):
         provider_commands.remove_provider(provider_name)
 
     elif args.providers_command == "models":
-        model_commands = ModelCommands(orchestrator)
+        model_commands = ModelCommands(orchestrator, orchestrator.config)
         provider_name = getattr(args, 'provider_name', None)
         model_commands.list_models(provider_name)
 
     elif args.providers_command == "set-model":
         provider_name = getattr(args, 'provider_name', None)
         provider_commands.set_default_model(provider_name)
+
+
+def handle_models_command(args, orchestrator):
+    """Handle models subcommands"""
+    model_commands = ModelCommands(orchestrator, orchestrator.config)
+
+    if not args.models_command or args.models_command == "list":
+        provider_name = getattr(args, 'provider_name', None)
+        model_commands.list_models(provider_name)
+
+    elif args.models_command == "select":
+        provider_name = getattr(args, 'provider_name', None)
+        model_commands.select_model(provider_name)
 
 
 def handle_context_command(args, orchestrator):

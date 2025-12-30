@@ -247,8 +247,9 @@ class ConfigCommands:
 class ModelCommands:
     """Commands for model management"""
 
-    def __init__(self, orchestrator):
+    def __init__(self, orchestrator, config: Config = None):
         self.orchestrator = orchestrator
+        self.config = config
 
     def list_models(self, provider_name: str = None):
         """List available models"""
@@ -276,3 +277,93 @@ class ModelCommands:
                 print(f"  Default: {provider.default_model}")
         else:
             print(f"  Default: {provider.default_model}")
+
+    def select_model(self, provider_name: str = None):
+        """Interactively select a model for a provider"""
+        # Select provider if not specified
+        if not provider_name:
+            available_providers = self.orchestrator.router.get_available_providers()
+            if not available_providers:
+                ColoredOutput.error("No providers available!")
+                return
+
+            ColoredOutput.header("\n🤖 Select Model\n")
+            provider_name = InteractivePrompt.select(
+                "Which provider?",
+                available_providers
+            )
+
+        provider = self.orchestrator.router.providers.get(provider_name)
+        if not provider:
+            ColoredOutput.error(f"Provider {provider_name} not available")
+            return
+
+        # Get current model
+        current_model = provider.default_model
+        print(f"\nCurrent model: {ColoredOutput.CYAN}{current_model}{ColoredOutput.RESET}")
+
+        # Fetch available models
+        if not hasattr(provider, 'get_available_models'):
+            ColoredOutput.warning(f"\n{provider_name} doesn't support dynamic model fetching")
+            new_model = InteractivePrompt.input_text(
+                "Enter model name manually",
+                default=current_model
+            )
+        else:
+            ColoredOutput.info("\nFetching available models...")
+            try:
+                models = provider.get_available_models()
+
+                if not models:
+                    ColoredOutput.warning("No models found. Enter manually.")
+                    new_model = InteractivePrompt.input_text(
+                        "Model name",
+                        default=current_model
+                    )
+                else:
+                    # Prepare model choices with descriptions
+                    print(f"\n{ColoredOutput.CYAN}Available models:{ColoredOutput.RESET}\n")
+
+                    model_choices = []
+                    for idx, model in enumerate(models, 1):
+                        model_id = model.get('id', model.get('name', ''))
+                        model_name = model.get('name', model_id)
+                        model_desc = model.get('description', '')
+
+                        # Display model info
+                        print(f"  {idx}. {ColoredOutput.BOLD}{model_id}{ColoredOutput.RESET}")
+                        if model_desc:
+                            print(f"     {model_desc}")
+
+                        model_choices.append(model_id)
+
+                    print()
+
+                    # Let user select from the list
+                    selected_model = InteractivePrompt.select(
+                        "Select a model",
+                        model_choices
+                    )
+
+                    new_model = selected_model
+
+            except Exception as e:
+                ColoredOutput.error(f"Error fetching models: {str(e)}")
+                new_model = InteractivePrompt.input_text(
+                    "Enter model name manually",
+                    default=current_model
+                )
+
+        # Confirm and save
+        if new_model != current_model:
+            if InteractivePrompt.confirm(f"\nSet default model to {new_model}?", default=True):
+                # Save to config
+                if self.config:
+                    self.config.set(f"providers.{provider_name}.default_model", new_model)
+                    self.config.save()
+                    ColoredOutput.success(f"\n✓ Default model for {provider_name} set to {new_model}")
+                    print(f"{ColoredOutput.YELLOW}Restart agentix for changes to take effect{ColoredOutput.RESET}")
+                else:
+                    ColoredOutput.warning("\nConfig not available. Changes not saved.")
+        else:
+            ColoredOutput.info("\nNo changes made")

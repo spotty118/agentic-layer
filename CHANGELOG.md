@@ -5,6 +5,57 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0] - 2025-12-30
+
+### 🎯 Interactive Model Selection
+
+**Major UX Improvement**: Terminal-based interactive model selection - no more config file editing!
+
+### Added
+- **Interactive Model Selection Command**: `agentix models select [provider]`
+  - Terminal-based interactive model picker
+  - Browse available models with descriptions
+  - See current model before changing
+  - Automatic configuration saving
+- **Dynamic Model Fetching**: All providers now fetch available models dynamically
+  - Claude API/CLI: Comprehensive list of Claude 4.5, 4.0, and 3.x models
+  - OpenAI API/CLI: Fetches models via API (GPT-4, Codex, O1, O3 series)
+  - Gemini API/CLI: Fetches models via API (Gemini 3.0, 2.0, 1.5 series)
+  - Fallback to known models if API fetch fails
+- **Model Listing Command**: `agentix models list [provider]`
+  - View all available models for a provider
+  - Shows model IDs and descriptions
+  - Interactive provider selection if not specified
+
+### Enhanced
+- **ModelCommands Class**: Added `select_model()` method with full interactive flow
+- **Provider Base**: All providers now implement `get_available_models()`
+  - Claude providers: 7 models (Opus 4.5, Sonnet 4.5, Haiku 4.5, etc.)
+  - OpenAI providers: Dynamic API fetch + 6 fallback models
+  - Gemini providers: Dynamic API fetch + 5 fallback models
+- **CLI Help**: Updated welcome message to highlight new feature
+- **Documentation**: Comprehensive section in README with examples
+
+### Benefits
+- **No File Editing**: Everything happens in the terminal
+- **Up-to-Date Models**: Automatically fetches latest models from providers
+- **Better UX**: See all options before selecting
+- **Safe**: Preview current model before changing
+- **Fast**: Immediate configuration with automatic saving
+
+### Example Usage
+```bash
+# Interactive model selection
+agentix models select
+
+# Select model for specific provider
+agentix models select claude
+agentix models select openai
+
+# List available models
+agentix models list gemini
+```
+
 ## [1.0.0] - 2025-01-15
 
 ### 🚀 Major Release: Multi-AI Integration

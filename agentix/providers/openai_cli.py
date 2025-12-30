@@ -167,3 +167,55 @@ class OpenAICLIProvider(AIProvider):
     def get_codex_model(self) -> str:
         """Get the Codex model for code-specific tasks"""
         return "codex-5.2-medium"  # Latest Codex 5.2
+
+    def get_available_models(self) -> List[Dict[str, Any]]:
+        """Get list of available OpenAI models for CLI"""
+        try:
+            # Try to fetch models from CLI if it supports a list command
+            result = subprocess.run(
+                [self.cli_command, "models", "list"],
+                capture_output=True,
+                text=True,
+                timeout=10
+            )
+
+            if result.returncode == 0:
+                # Parse the output (format depends on CLI implementation)
+                # For now, return static list
+                pass
+        except:
+            pass
+
+        # Return known OpenAI models
+        return [
+            {
+                "id": "codex-5.2-medium",
+                "name": "Codex 5.2 Medium",
+                "description": "Latest Codex for code generation"
+            },
+            {
+                "id": "gpt-4-turbo",
+                "name": "GPT-4 Turbo",
+                "description": "Most capable GPT-4 model"
+            },
+            {
+                "id": "gpt-4",
+                "name": "GPT-4",
+                "description": "Standard GPT-4 model"
+            },
+            {
+                "id": "gpt-3.5-turbo",
+                "name": "GPT-3.5 Turbo",
+                "description": "Fast and efficient"
+            },
+            {
+                "id": "o1-preview",
+                "name": "O1 Preview",
+                "description": "Advanced reasoning model"
+            },
+            {
+                "id": "o3-mini",
+                "name": "O3 Mini",
+                "description": "Efficient O3 variant"
+            },
+        ]

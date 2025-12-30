@@ -208,6 +208,76 @@ providers:
 | `agentix history` | View execution history | - |
 | `agentix rollback` | Show available backups | - |
 | `agentix diff [file]` | View file diffs | - |
+| `agentix models list [provider]` | List available models | - |
+| `agentix models select [provider]` | Interactively select a model | - |
+
+## Interactive Model Selection 🆕
+
+Agentix now supports **terminal-based interactive model selection** - no need to edit configuration files!
+
+### Quick Model Selection
+
+```bash
+# Interactively select a model for any provider
+agentix models select
+
+# Or specify the provider
+agentix models select claude
+agentix models select openai
+agentix models select gemini
+```
+
+### How It Works
+
+1. **Dynamic Model Fetching**: Agentix automatically fetches available models from each provider
+   - For API providers (Claude, OpenAI, Gemini): Fetches from the provider's API
+   - For CLI providers: Uses known models compatible with the CLI
+
+2. **Interactive Selection**: Browse models in your terminal with descriptions
+   ```
+   🤖 Select Model
+
+   Which provider? claude
+
+   Current model: claude-sonnet-4.5-20250514
+
+   Fetching available models...
+
+   Available models:
+
+     1. claude-opus-4.5-20250514
+        Most capable model for complex reasoning and analysis
+
+     2. claude-sonnet-4.5-20250514
+        Balanced performance for code and general tasks
+
+     3. claude-haiku-4.5-20250514
+        Fast and efficient for simpler tasks
+
+   Select a model: [Use arrow keys]
+   ```
+
+3. **Automatic Configuration**: Your selection is saved to `.agent/config.yaml` automatically
+
+### List Available Models
+
+```bash
+# List models for a provider
+agentix models list claude
+agentix models list openai
+agentix models list gemini
+
+# Interactive provider selection
+agentix models list
+```
+
+### Benefits
+
+- **No file editing**: Everything happens in your terminal
+- **See all options**: Browse available models with descriptions
+- **Up-to-date models**: Automatically fetches latest models from providers
+- **Safe selection**: See current model before changing
+- **Immediate feedback**: Confirmation after selection
 
 ## Diff Viewing & Editing
 
