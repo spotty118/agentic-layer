@@ -40,7 +40,7 @@ class ClaudeProvider(AIProvider):
 
     @property
     def default_model(self) -> str:
-        return "claude-3-5-sonnet-20241022"
+        return "claude-sonnet-4.5-20250514"  # Latest Claude Sonnet 4.5 (Dec 2025)
 
     def get_client(self) -> Any:
         """Get or create Anthropic client"""
@@ -113,10 +113,10 @@ class ClaudeProvider(AIProvider):
         """Get optimal Claude model for task type"""
         # Map task types to best Claude models
         task_models = {
-            "planning": "claude-3-5-sonnet-20241022",  # Best for complex reasoning
-            "refactoring": "claude-3-5-sonnet-20241022",  # Best for code understanding
-            "specification": "claude-3-5-sonnet-20241022",  # Best for structured output
-            "code_generation": "claude-3-5-sonnet-20241022",  # Balanced performance
-            "review": "claude-3-5-sonnet-20241022",  # Best for analysis
+            "planning": "claude-opus-4.5-20250514",  # Opus 4.5 for complex reasoning
+            "refactoring": "claude-sonnet-4.5-20250514",  # Sonnet 4.5 for code understanding
+            "specification": "claude-opus-4.5-20250514",  # Opus 4.5 for structured output
+            "code_generation": "claude-sonnet-4.5-20250514",  # Sonnet 4.5 balanced performance
+            "review": "claude-sonnet-4.5-20250514",  # Sonnet 4.5 for analysis
         }
         return task_models.get(task_type, self.default_model)

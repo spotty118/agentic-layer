@@ -41,9 +41,9 @@ Traditional AI coding tools lock you into a single provider. **Agentix** intelli
 
 | Provider | Latest Model (Dec 2025) | Strengths | Best For | Access Methods |
 |----------|----------|-----------|----------|----------------|
-| **Claude** | Sonnet 4 (claude-sonnet-4-20250514) | Long context, Superior reasoning, Precise instructions | Specifications, Planning, Refactoring, Code Review | API + CLI 🆕 |
-| **OpenAI** | GPT-4o (gpt-4o) | Excellent code generation, Fast inference, Broad knowledge | Code Generation, Task Execution, Problem Solving | API + CLI 🆕 |
-| **Gemini** | Gemini 2.0 (gemini-2.0-flash-exp) | Ultra-long context (2M tokens), Lightning fast, Multimodal | Large Codebases, Fast Iterations, Rapid Prototyping | API + CLI 🆕 |
+| **Claude** | Sonnet 4.5 / Opus 4.5 (claude-sonnet-4.5-20250514) | Long context, Superior reasoning, Precise instructions | Specifications, Planning, Refactoring, Code Review | API + CLI 🆕 |
+| **OpenAI** | Codex 5.2 (codex-5.2-medium) | Excellent code generation, Fast inference, Broad knowledge | Code Generation, Task Execution, Problem Solving | API + CLI 🆕 |
+| **Gemini** | Gemini 3.0 Pro (gemini-3.0-pro-high/low) | Ultra-long context (2M tokens), Lightning fast, Multimodal | Large Codebases, Fast Iterations, Rapid Prototyping | API + CLI 🆕 |
 | **Ollama** | Various local models | 100% local, Privacy-focused, No API costs | Offline work, Sensitive codebases | Local only |
 | **OpenRouter** | 100+ models | Flexible pricing, Wide model selection | Access to many models | API only |
 
@@ -124,15 +124,15 @@ providers:
   # Enable/disable providers
   claude:
     enabled: true
-    default_model: claude-sonnet-4-20250514  # Latest Sonnet 4 (Dec 2025)
+    default_model: claude-sonnet-4.5-20250514  # Latest Sonnet 4.5 (Dec 2025)
 
   openai:
     enabled: true
-    default_model: gpt-4o  # Latest GPT-4o (Dec 2025)
+    default_model: codex-5.2-medium  # Latest Codex 5.2 (Dec 2025)
 
   gemini:
     enabled: true
-    default_model: gemini-2.0-flash-exp  # Gemini 2.0 (Dec 2025)
+    default_model: gemini-3.0-pro-high  # Gemini 3.0 Pro (Dec 2025)
 
   routing:
     strategy: intelligent  # intelligent | preferred | round_robin

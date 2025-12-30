@@ -40,7 +40,7 @@ class GeminiProvider(AIProvider):
 
     @property
     def default_model(self) -> str:
-        return "gemini-1.5-flash"  # Fast and cost-effective
+        return "gemini-3.0-pro-high"  # Latest Gemini 3.0 Pro (Dec 2025)
 
     def get_client(self) -> Any:
         """Get or create Gemini client"""
@@ -126,11 +126,11 @@ class GeminiProvider(AIProvider):
         """Get optimal Gemini model for task type"""
         # Map task types to best Gemini models
         task_models = {
-            "code_generation": "gemini-1.5-flash",  # Fast code generation
-            "task_execution": "gemini-1.5-flash",  # Quick iterations
-            "specification": "gemini-1.5-pro",  # Better structured output
-            "planning": "gemini-1.5-pro",  # Better reasoning
-            "review": "gemini-1.5-pro",  # Better analysis
-            "large_context": "gemini-1.5-pro",  # Handles massive context
+            "code_generation": "gemini-3.0-pro-low",  # Fast code generation
+            "task_execution": "gemini-3.0-pro-low",  # Quick iterations
+            "specification": "gemini-3.0-pro-high",  # Better structured output
+            "planning": "gemini-3.0-pro-high",  # Better reasoning
+            "review": "gemini-3.0-pro-high",  # Better analysis
+            "large_context": "gemini-3.0-pro-high",  # Handles massive context
         }
         return task_models.get(task_type, self.default_model)

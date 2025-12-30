@@ -43,7 +43,7 @@ class OpenAICLIProvider(AIProvider):
 
     @property
     def default_model(self) -> str:
-        return "gpt-4-turbo"
+        return "codex-5.2-medium"  # Latest Codex 5.2 (Dec 2025)
 
     def get_client(self) -> Any:
         """Check if OpenAI CLI is installed"""
@@ -156,15 +156,14 @@ class OpenAICLIProvider(AIProvider):
     def get_optimal_model(self, task_type: str) -> str:
         """Get optimal OpenAI model for task type"""
         task_models = {
-            "code_generation": "gpt-4-turbo",
-            "task_execution": "gpt-4-turbo",
-            "specification": "gpt-4-turbo",
-            "planning": "gpt-4-turbo",
-            "review": "gpt-4-turbo",
+            "code_generation": "codex-5.2-medium",
+            "task_execution": "codex-5.2-medium",
+            "specification": "codex-5.2-medium",
+            "planning": "codex-5.2-medium",
+            "review": "codex-5.2-medium",
         }
         return task_models.get(task_type, self.default_model)
 
     def get_codex_model(self) -> str:
         """Get the Codex model for code-specific tasks"""
-        # Codex is now integrated into GPT-4
-        return "gpt-4-turbo"
+        return "codex-5.2-medium"  # Latest Codex 5.2

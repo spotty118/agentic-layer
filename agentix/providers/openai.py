@@ -39,7 +39,7 @@ class OpenAIProvider(AIProvider):
 
     @property
     def default_model(self) -> str:
-        return "gpt-4.1-mini"  # Default to GPT-4.1 mini for cost-effectiveness
+        return "codex-5.2-medium"  # Latest Codex 5.2 (Dec 2025)
 
     def get_client(self) -> Any:
         """Get or create OpenAI client"""
@@ -88,17 +88,16 @@ class OpenAIProvider(AIProvider):
 
     def get_optimal_model(self, task_type: str) -> str:
         """Get optimal OpenAI model for task type"""
-        # Map task types to best OpenAI models
+        # Map task types to best Codex/OpenAI models
         task_models = {
-            "code_generation": "gpt-4.1-mini",  # Fast and good for code
-            "task_execution": "gpt-4.1-mini",  # Quick task completion
-            "specification": "gpt-4.1-mini",  # Good for structured output
-            "planning": "gpt-4.1-mini",  # Decent planning
-            "review": "gpt-4.1-mini",  # Code analysis
+            "code_generation": "codex-5.2-medium",  # Codex 5.2 for code generation
+            "task_execution": "codex-5.2-medium",  # Codex 5.2 for task execution
+            "specification": "codex-5.2-medium",  # Good for structured output
+            "planning": "codex-5.2-medium",  # Decent planning
+            "review": "codex-5.2-medium",  # Code analysis
         }
         return task_models.get(task_type, self.default_model)
 
     def get_codex_model(self) -> str:
         """Get the Codex model for code-specific tasks"""
-        # Codex is now integrated into GPT-4
-        return "gpt-4.1-mini"
+        return "codex-5.2-medium"  # Latest Codex 5.2

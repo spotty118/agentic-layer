@@ -45,7 +45,7 @@ class GeminiCLIProvider(AIProvider):
 
     @property
     def default_model(self) -> str:
-        return "gemini-1.5-flash"
+        return "gemini-3.0-pro-high"  # Latest Gemini 3.0 Pro (Dec 2025)
 
     def get_client(self) -> Any:
         """Check if Gemini CLI is installed"""
@@ -158,11 +158,11 @@ class GeminiCLIProvider(AIProvider):
     def get_optimal_model(self, task_type: str) -> str:
         """Get optimal Gemini model for task type"""
         task_models = {
-            "code_generation": "gemini-1.5-flash",
-            "task_execution": "gemini-1.5-flash",
-            "specification": "gemini-1.5-pro",
-            "planning": "gemini-1.5-pro",
-            "review": "gemini-1.5-pro",
-            "large_context": "gemini-1.5-pro",
+            "code_generation": "gemini-3.0-pro-low",  # Fast code generation
+            "task_execution": "gemini-3.0-pro-low",  # Quick iterations
+            "specification": "gemini-3.0-pro-high",  # Better structured output
+            "planning": "gemini-3.0-pro-high",  # Better reasoning
+            "review": "gemini-3.0-pro-high",  # Better analysis
+            "large_context": "gemini-3.0-pro-high",  # Handles massive context
         }
         return task_models.get(task_type, self.default_model)
