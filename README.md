@@ -39,15 +39,15 @@ Traditional AI coding tools lock you into a single provider. **Agentix** intelli
 
 ### 🤖 Multi-AI Integration
 
-| Provider | Strengths | Best For | API/Local |
-|----------|-----------|----------|-----------|
-| **Claude** | Long context (200K tokens), Superior reasoning, Precise instructions | Specifications, Planning, Refactoring, Code Review | Both 🆕 |
-| **OpenAI Codex** | Excellent code generation, Fast inference, Broad knowledge | Code Generation, Task Execution, Problem Solving | Both 🆕 |
-| **Gemini** | Ultra-long context (2M tokens), Lightning fast, Multimodal | Large Codebases, Fast Iterations, Rapid Prototyping | Both 🆕 |
+| Provider | Strengths | Best For | Access Methods |
+|----------|-----------|----------|----------------|
+| **Claude** | Long context (200K tokens), Superior reasoning, Precise instructions | Specifications, Planning, Refactoring, Code Review | API + CLI 🆕 |
+| **OpenAI Codex** | Excellent code generation, Fast inference, Broad knowledge | Code Generation, Task Execution, Problem Solving | API + CLI 🆕 |
+| **Gemini** | Ultra-long context (2M tokens), Lightning fast, Multimodal | Large Codebases, Fast Iterations, Rapid Prototyping | API + CLI 🆕 |
 | **Ollama** | 100% local, Privacy-focused, No API costs | Offline work, Sensitive codebases | Local only |
 | **OpenRouter** | 100+ models, Flexible pricing | Access to many models | API only |
 
-**🆕 Local Provider Support:** Connect to locally installed Claude Code, Gemini, and Codex (via VS Code extensions or HTTP proxies) without API keys! See [LOCAL_PROVIDERS.md](LOCAL_PROVIDERS.md) for setup.
+**🆕 CLI Provider Support:** Use authenticated CLI tools (like `claude`, `openai`, `gemini`) without API keys! Just run `<tool> login` once, then Agentix uses your authenticated session. See [CLI_PROVIDERS.md](CLI_PROVIDERS.md) for setup.
 
 ### 🛡️ Safety & Control
 - Automatic file backups before modifications
@@ -63,23 +63,25 @@ pip install agentix
 
 ## Quick Start
 
-### Option 1: Local Providers (No API Keys!) 🆕
+### Option 1: CLI Providers (No API Keys!) 🆕
 
-Use locally installed Claude Code, Gemini, or Codex without API keys:
+Use authenticated CLI tools without API keys:
 
 ```bash
-# 1. Enable local providers in .agent/config.yaml
-# (See LOCAL_PROVIDERS.md for setup)
+# 1. Install and authenticate CLI tools (once)
+npm install -g @anthropic/claude-code
+claude login
 
-# 2. Initialize in your project
+# 2. Enable CLI providers in .agent/config.yaml
+# (See CLI_PROVIDERS.md for full setup)
+
+# 3. Initialize and start building
 cd my-project
 agentix init
-
-# 3. Start building (uses local providers automatically)
 agentix specify "Add JWT authentication"
 ```
 
-### Option 2: Remote API Providers
+### Option 2: API Providers
 
 ```bash
 # 1. Set up API keys (you need at least one)

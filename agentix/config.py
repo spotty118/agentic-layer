@@ -16,24 +16,21 @@ DEFAULT_CONFIG = {
     "providers": {
         # Configure any/all providers - use 1 or use them all!
 
-        # LOCAL PROVIDERS (No API keys needed - connect to local installations)
-        "local_claude": {
-            "enabled": False,  # Set to True to use locally installed Claude Code
-            "base_url": None,  # Uses CLAUDE_LOCAL_URL env var, defaults to http://localhost:3000
+        # CLI PROVIDERS (No API keys needed - use authenticated CLI tools)
+        "claude_cli": {
+            "enabled": False,  # Set to True to use Claude CLI (after `claude login`)
             "default_model": "claude-3-5-sonnet-20241022"
         },
-        "local_openai": {
-            "enabled": False,  # Set to True to use locally installed OpenAI/Codex
-            "base_url": None,  # Uses OPENAI_LOCAL_URL env var, defaults to http://localhost:3002
+        "openai_cli": {
+            "enabled": False,  # Set to True to use OpenAI CLI (after authentication)
             "default_model": "gpt-4-turbo"
         },
-        "local_gemini": {
-            "enabled": False,  # Set to True to use locally installed Gemini
-            "base_url": None,  # Uses GEMINI_LOCAL_URL env var, defaults to http://localhost:3001
+        "gemini_cli": {
+            "enabled": False,  # Set to True to use Gemini CLI (after `gcloud auth login`)
             "default_model": "gemini-1.5-flash"
         },
 
-        # REMOTE API PROVIDERS (Require API keys)
+        # API PROVIDERS (Require API keys)
         "claude": {
             "enabled": True,
             "api_key": None,  # Uses ANTHROPIC_API_KEY env var if not set
@@ -65,16 +62,16 @@ DEFAULT_CONFIG = {
             "strategy": "intelligent",  # intelligent | preferred | round_robin
             "preferred_provider": None,  # Set to force a specific provider
             "task_routing": {
-                # Local providers preferred when available (no API costs)
-                "specification": "local_claude",  # Best for specs
-                "planning": "local_claude",  # Best for planning
-                "tasks": "local_claude",  # Best for task breakdown
-                "code_generation": "local_openai",  # Codex excellence
-                "task_execution": "local_gemini",  # Fast execution
-                "refactoring": "local_claude",  # Best code understanding
-                "review": "local_claude",  # Best analysis
-                "local": "local_claude",  # For local/offline work
-                "cost_effective": "local_claude"  # Free local providers
+                # CLI providers preferred when available (use authenticated tools, no API costs)
+                "specification": "claude_cli",  # Best for specs
+                "planning": "claude_cli",  # Best for planning
+                "tasks": "claude_cli",  # Best for task breakdown
+                "code_generation": "openai_cli",  # Codex excellence
+                "task_execution": "gemini_cli",  # Fast execution
+                "refactoring": "claude_cli",  # Best code understanding
+                "review": "claude_cli",  # Best analysis
+                "cli": "claude_cli",  # For CLI tool usage
+                "cost_effective": "claude_cli"  # Free CLI providers
             }
         }
     },

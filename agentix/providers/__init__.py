@@ -2,9 +2,9 @@
 AI Provider integrations for Agentix
 
 Supports unlimited AI providers:
-- Claude (Anthropic) - API and Local
-- OpenAI / Codex - API and Local
-- Gemini (Google) - API and Local
+- Claude (Anthropic) - API and CLI
+- OpenAI / Codex - API and CLI
+- Gemini (Google) - API and CLI
 - OpenRouter (100+ models)
 - Ollama (local models)
 - ... and more!
@@ -16,9 +16,9 @@ from .openai import OpenAIProvider
 from .gemini import GeminiProvider
 from .openrouter import OpenRouterProvider
 from .ollama import OllamaProvider
-from .local_claude import LocalClaudeProvider
-from .local_openai import LocalOpenAIProvider
-from .local_gemini import LocalGeminiProvider
+from .claude_cli import ClaudeCLIProvider
+from .openai_cli import OpenAICLIProvider
+from .gemini_cli import GeminiCLIProvider
 from .router import ProviderRouter
 
 __all__ = [
@@ -29,8 +29,8 @@ __all__ = [
     "GeminiProvider",
     "OpenRouterProvider",
     "OllamaProvider",
-    "LocalClaudeProvider",
-    "LocalOpenAIProvider",
-    "LocalGeminiProvider",
+    "ClaudeCLIProvider",
+    "OpenAICLIProvider",
+    "GeminiCLIProvider",
     "ProviderRouter",
 ]
