@@ -44,7 +44,7 @@ class ClaudeCLIProvider(AIProvider):
 
     @property
     def default_model(self) -> str:
-        return "claude-3-5-sonnet-20241022"
+        return "claude-sonnet-4.5-20250514"  # Latest Claude Sonnet 4.5 (Dec 2025)
 
     def get_client(self) -> Any:
         """Check if Claude CLI is installed"""
@@ -159,5 +159,12 @@ class ClaudeCLIProvider(AIProvider):
 
     def get_optimal_model(self, task_type: str) -> str:
         """Get optimal Claude model for task type"""
-        # Claude CLI typically uses the latest model
-        return self.default_model
+        # Map task types to best Claude models
+        task_models = {
+            "planning": "claude-opus-4.5-20250514",  # Opus 4.5 for complex reasoning
+            "refactoring": "claude-sonnet-4.5-20250514",  # Sonnet 4.5 for code understanding
+            "specification": "claude-opus-4.5-20250514",  # Opus 4.5 for structured output
+            "code_generation": "claude-sonnet-4.5-20250514",  # Sonnet 4.5 balanced performance
+            "review": "claude-sonnet-4.5-20250514",  # Sonnet 4.5 for analysis
+        }
+        return task_models.get(task_type, self.default_model)
