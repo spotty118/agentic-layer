@@ -230,8 +230,7 @@ Followed by a human-readable checklist."""
             tasks_content, used_provider = self.router.complete(
                 messages=[
                     {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": f"Technical Plan:
-{plan}"}
+                    {"role": "user", "content": f"Technical Plan:\n{plan}"}
                 ],
                 task_type="tasks",
                 temperature=self.config.get_temperature() if self.config else 0.7,

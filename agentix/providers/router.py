@@ -16,6 +16,9 @@ from .openai import OpenAIProvider
 from .gemini import GeminiProvider
 from .openrouter import OpenRouterProvider
 from .ollama import OllamaProvider
+from .claude_cli import ClaudeCLIProvider
+from .openai_cli import OpenAICLIProvider
+from .gemini_cli import GeminiCLIProvider
 
 
 class ProviderRouter:
@@ -26,18 +29,19 @@ class ProviderRouter:
     """
 
     # Best provider for each task type based on strengths
+    # CLI providers are prioritized when available (use authenticated tools, no API keys needed)
     TASK_PREFERENCES = {
-        "specification": ["claude", "openai", "gemini", "openrouter", "ollama"],
-        "planning": ["claude", "openai", "gemini", "openrouter", "ollama"],
-        "tasks": ["claude", "openai", "gemini", "openrouter", "ollama"],
-        "code_generation": ["openai", "ollama", "gemini", "claude", "openrouter"],
-        "task_execution": ["gemini", "ollama", "openai", "claude", "openrouter"],
-        "refactoring": ["claude", "openai", "gemini", "openrouter", "ollama"],
-        "review": ["claude", "openai", "gemini", "openrouter", "ollama"],
-        "large_context": ["gemini", "claude", "openrouter", "openai", "ollama"],
-        "fast_iteration": ["gemini", "ollama", "openai", "claude", "openrouter"],
-        "local": ["ollama"],  # Prefer local models when requested
-        "cost_effective": ["ollama", "openrouter", "gemini", "openai", "claude"],
+        "specification": ["claude_cli", "claude", "openai_cli", "openai", "gemini_cli", "gemini", "openrouter", "ollama"],
+        "planning": ["claude_cli", "claude", "openai_cli", "openai", "gemini_cli", "gemini", "openrouter", "ollama"],
+        "tasks": ["claude_cli", "claude", "openai_cli", "openai", "gemini_cli", "gemini", "openrouter", "ollama"],
+        "code_generation": ["openai_cli", "openai", "gemini_cli", "ollama", "gemini", "claude_cli", "claude", "openrouter"],
+        "task_execution": ["gemini_cli", "gemini", "openai_cli", "ollama", "openai", "claude_cli", "claude", "openrouter"],
+        "refactoring": ["claude_cli", "claude", "openai_cli", "openai", "gemini_cli", "gemini", "openrouter", "ollama"],
+        "review": ["claude_cli", "claude", "openai_cli", "openai", "gemini_cli", "gemini", "openrouter", "ollama"],
+        "large_context": ["gemini_cli", "gemini", "claude_cli", "claude", "openrouter", "openai_cli", "openai", "ollama"],
+        "fast_iteration": ["gemini_cli", "gemini", "openai_cli", "ollama", "openai", "claude_cli", "claude", "openrouter"],
+        "cli": ["claude_cli", "openai_cli", "gemini_cli", "ollama"],  # Prefer CLI tools when requested
+        "cost_effective": ["claude_cli", "openai_cli", "gemini_cli", "ollama", "openrouter", "gemini", "openai", "claude"],
     }
 
     # Map of provider names to their class constructors
@@ -47,6 +51,9 @@ class ProviderRouter:
         "gemini": GeminiProvider,
         "openrouter": OpenRouterProvider,
         "ollama": OllamaProvider,
+        "claude_cli": ClaudeCLIProvider,
+        "openai_cli": OpenAICLIProvider,
+        "gemini_cli": GeminiCLIProvider,
     }
 
     def __init__(self, config: Optional[Dict[str, Any]] = None, shared_context: Optional[Any] = None):
@@ -94,6 +101,9 @@ class ProviderRouter:
                     provider = ProviderClass(
                         base_url=provider_cfg.get("base_url")
                     )
+                elif provider_name in ["claude_cli", "openai_cli", "gemini_cli"]:
+                    # CLI providers don't need api_key or base_url - they use authenticated CLI tools
+                    provider = ProviderClass()
                 else:
                     provider = ProviderClass(api_key=api_key)
 

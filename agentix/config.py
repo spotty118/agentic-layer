@@ -15,6 +15,22 @@ DEFAULT_CONFIG = {
     },
     "providers": {
         # Configure any/all providers - use 1 or use them all!
+
+        # CLI PROVIDERS (No API keys needed - use authenticated CLI tools)
+        "claude_cli": {
+            "enabled": False,  # Set to True to use Claude CLI (after `claude login`)
+            "default_model": "claude-3-5-sonnet-20241022"
+        },
+        "openai_cli": {
+            "enabled": False,  # Set to True to use OpenAI CLI (after authentication)
+            "default_model": "gpt-4-turbo"
+        },
+        "gemini_cli": {
+            "enabled": False,  # Set to True to use Gemini CLI (after `gcloud auth login`)
+            "default_model": "gemini-1.5-flash"
+        },
+
+        # API PROVIDERS (Require API keys)
         "claude": {
             "enabled": True,
             "api_key": None,  # Uses ANTHROPIC_API_KEY env var if not set
@@ -46,15 +62,16 @@ DEFAULT_CONFIG = {
             "strategy": "intelligent",  # intelligent | preferred | round_robin
             "preferred_provider": None,  # Set to force a specific provider
             "task_routing": {
-                "specification": "claude",  # Best for specs
-                "planning": "claude",  # Best for planning
-                "tasks": "claude",  # Best for task breakdown
-                "code_generation": "openai",  # Codex excellence
-                "task_execution": "gemini",  # Fast execution
-                "refactoring": "claude",  # Best code understanding
-                "review": "claude",  # Best analysis
-                "local": "ollama",  # For local/offline work
-                "cost_effective": "ollama"  # Free local models
+                # CLI providers preferred when available (use authenticated tools, no API costs)
+                "specification": "claude_cli",  # Best for specs
+                "planning": "claude_cli",  # Best for planning
+                "tasks": "claude_cli",  # Best for task breakdown
+                "code_generation": "openai_cli",  # Codex excellence
+                "task_execution": "gemini_cli",  # Fast execution
+                "refactoring": "claude_cli",  # Best code understanding
+                "review": "claude_cli",  # Best analysis
+                "cli": "claude_cli",  # For CLI tool usage
+                "cost_effective": "claude_cli"  # Free CLI providers
             }
         }
     },

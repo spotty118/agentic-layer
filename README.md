@@ -39,11 +39,15 @@ Traditional AI coding tools lock you into a single provider. **Agentix** intelli
 
 ### 🤖 Multi-AI Integration
 
-| Provider | Latest Model (Dec 2025) | Strengths | Best For |
-|----------|----------|-----------|----------|
-| **Claude** | Sonnet 4 (claude-sonnet-4-20250514) | Long context, Superior reasoning, Precise instructions | Specifications, Planning, Refactoring, Code Review |
-| **OpenAI** | GPT-4o (gpt-4o) | Excellent code generation, Fast inference, Broad knowledge | Code Generation, Task Execution, Problem Solving |
-| **Gemini** | Gemini 2.0 (gemini-2.0-flash-exp) | Ultra-long context (2M tokens), Lightning fast, Multimodal | Large Codebases, Fast Iterations, Rapid Prototyping |
+| Provider | Latest Model (Dec 2025) | Strengths | Best For | Access Methods |
+|----------|----------|-----------|----------|----------------|
+| **Claude** | Sonnet 4 (claude-sonnet-4-20250514) | Long context, Superior reasoning, Precise instructions | Specifications, Planning, Refactoring, Code Review | API + CLI 🆕 |
+| **OpenAI** | GPT-4o (gpt-4o) | Excellent code generation, Fast inference, Broad knowledge | Code Generation, Task Execution, Problem Solving | API + CLI 🆕 |
+| **Gemini** | Gemini 2.0 (gemini-2.0-flash-exp) | Ultra-long context (2M tokens), Lightning fast, Multimodal | Large Codebases, Fast Iterations, Rapid Prototyping | API + CLI 🆕 |
+| **Ollama** | Various local models | 100% local, Privacy-focused, No API costs | Offline work, Sensitive codebases | Local only |
+| **OpenRouter** | 100+ models | Flexible pricing, Wide model selection | Access to many models | API only |
+
+**🆕 CLI Provider Support:** Use authenticated CLI tools (like `claude`, `openai`, `gemini`) without API keys! Just run `<tool> login` once, then Agentix uses your authenticated session. See [CLI_PROVIDERS.md](CLI_PROVIDERS.md) for setup.
 
 ### 🛡️ Safety & Control
 - **Diff Preview**: View changes before applying with unified or side-by-side diffs
@@ -59,6 +63,26 @@ pip install agentix
 ```
 
 ## Quick Start
+
+### Option 1: CLI Providers (No API Keys!) 🆕
+
+Use authenticated CLI tools without API keys:
+
+```bash
+# 1. Install and authenticate CLI tools (once)
+npm install -g @anthropic/claude-code
+claude login
+
+# 2. Enable CLI providers in .agent/config.yaml
+# (See CLI_PROVIDERS.md for full setup)
+
+# 3. Initialize and start building
+cd my-project
+agentix init
+agentix specify "Add JWT authentication"
+```
+
+### Option 2: API Providers
 
 ```bash
 # 1. Set up API keys (you need at least one)
