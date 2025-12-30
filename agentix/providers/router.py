@@ -237,9 +237,10 @@ class ProviderRouter:
             # Get full context including contributions from other providers
             messages = self.shared_context.get_messages(format="openai")
 
-        # Estimate context size
+        # Estimate context size using improved estimation
+        from ..context_window import estimate_tokens
         context_text = " ".join(msg["content"] for msg in messages)
-        context_size = len(context_text) // 4  # Rough token estimate
+        context_size = estimate_tokens(context_text)
 
         # Get optimal provider
         provider = self.get_provider(

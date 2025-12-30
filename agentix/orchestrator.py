@@ -6,6 +6,7 @@ from .validators import Validator, ValidationError, safe_file_operation
 from .logger import AgentLogger, ColoredOutput
 from .providers.router import ProviderRouter
 from .diff_utils import DiffViewer
+from .context_window import SharedContextWindow
 
 class Orchestrator:
     def __init__(self, root_dir):
@@ -20,6 +21,7 @@ class Orchestrator:
         self.config = Config(self.agent_dir) if os.path.exists(self.agent_dir) else None
         self.logger = None
         self.router = None
+        self.shared_context = None
         self.diff_viewer = DiffViewer(self.agent_dir) if os.path.exists(self.agent_dir) else None
 
         if self.config:
@@ -29,10 +31,19 @@ class Orchestrator:
                 level=self.config.get_log_level()
             )
 
+            # Initialize shared context window if enabled
+            if self.config.get("shared_context.enabled", False):
+                max_tokens = self.config.get("shared_context.max_tokens", 200000)
+                self.shared_context = SharedContextWindow(max_tokens=max_tokens)
+                ColoredOutput.success(f"Initialized shared context window ({max_tokens} tokens)")
+
             # Initialize AI provider router
             try:
                 providers_config = self.config.get_providers_config()
-                self.router = ProviderRouter(config={"providers": providers_config})
+                self.router = ProviderRouter(
+                    config={"providers": providers_config},
+                    shared_context=self.shared_context
+                )
                 ColoredOutput.success(f"Initialized {len(self.router.get_available_providers())} AI providers")
             except Exception as e:
                 ColoredOutput.error(f"Failed to initialize AI providers: {str(e)}")
@@ -101,7 +112,8 @@ class Orchestrator:
                 task_type="specification",
                 temperature=self.config.get_temperature() if self.config else 0.7,
                 max_tokens=self.config.get_max_tokens() if self.config else 4096,
-                preferred_provider=preferred_provider
+                preferred_provider=preferred_provider,
+                use_shared_context=self.shared_context is not None
             )
 
             ColoredOutput.info(f"Used AI provider: {used_provider}")
@@ -163,7 +175,8 @@ class Orchestrator:
                 task_type="planning",
                 temperature=self.config.get_temperature() if self.config else 0.7,
                 max_tokens=self.config.get_max_tokens() if self.config else 4096,
-                preferred_provider=preferred_provider
+                preferred_provider=preferred_provider,
+                use_shared_context=self.shared_context is not None
             )
 
             ColoredOutput.info(f"Used AI provider: {used_provider}")
@@ -235,7 +248,8 @@ Followed by a human-readable checklist."""
                 task_type="tasks",
                 temperature=self.config.get_temperature() if self.config else 0.7,
                 max_tokens=self.config.get_max_tokens() if self.config else 4096,
-                preferred_provider=preferred_provider
+                preferred_provider=preferred_provider,
+                use_shared_context=self.shared_context is not None
             )
 
             ColoredOutput.info(f"Used AI provider: {used_provider}")
@@ -444,7 +458,8 @@ Followed by a human-readable checklist."""
             task_type="code_generation",
             temperature=self.config.get_temperature() if self.config else 0.7,
             max_tokens=self.config.get_max_tokens() if self.config else 4096,
-            preferred_provider=preferred_provider
+            preferred_provider=preferred_provider,
+            use_shared_context=self.shared_context is not None
         )
 
         ColoredOutput.info(f"Used AI provider: {used_provider}")
