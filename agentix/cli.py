@@ -1,13 +1,16 @@
 import argparse
 import os
 import sys
+from pathlib import Path
 from .orchestrator import Orchestrator
 from .config import Config
 from .interactive import SetupWizard, InteractivePrompt, ColoredOutput
-from .commands import ProviderCommands, ConfigCommands, ModelCommands
+from .commands import ProviderCommands, ConfigCommands, ModelCommands, ToolCommands, PluginCommands
 from .diff_utils import DiffViewer
 from .code_viewer import CodeViewer
 from .syntax_highlighter import ColorScheme
+from .tools import ToolManager
+from .plugins import PluginManager
 
 
 def main():
@@ -176,6 +179,92 @@ def main():
     context_subparsers.add_parser(
         "disable",
         help="Disable shared context"
+    )
+
+    # === TOOLS & MCP ===
+
+    tools_parser = subparsers.add_parser(
+        "tools",
+        help="🔧 Manage tools and MCP servers"
+    )
+    tools_subparsers = tools_parser.add_subparsers(dest="tools_command")
+
+    tools_subparsers.add_parser(
+        "list",
+        help="List all available tools"
+    )
+
+    add_mcp_parser = tools_subparsers.add_parser(
+        "add",
+        help="Add an MCP server"
+    )
+    add_mcp_parser.add_argument(
+        "server_name",
+        nargs="?",
+        help="Server name (interactive if not specified)"
+    )
+
+    remove_mcp_parser = tools_subparsers.add_parser(
+        "remove",
+        help="Remove an MCP server"
+    )
+    remove_mcp_parser.add_argument(
+        "server_name",
+        nargs="?",
+        help="Server name (interactive if not specified)"
+    )
+
+    tools_subparsers.add_parser(
+        "servers",
+        help="List configured MCP servers"
+    )
+
+    test_tool_parser = tools_subparsers.add_parser(
+        "test",
+        help="Test a tool execution"
+    )
+    test_tool_parser.add_argument(
+        "tool_name",
+        nargs="?",
+        help="Tool to test (interactive if not specified)"
+    )
+
+    # === PLUGINS ===
+
+    plugins_parser = subparsers.add_parser(
+        "plugins",
+        help="🔌 Manage plugins"
+    )
+    plugins_subparsers = plugins_parser.add_subparsers(dest="plugins_command")
+
+    plugins_subparsers.add_parser(
+        "list",
+        help="List installed plugins"
+    )
+
+    plugins_subparsers.add_parser(
+        "discover",
+        help="Discover available plugins"
+    )
+
+    enable_plugin_parser = plugins_subparsers.add_parser(
+        "enable",
+        help="Enable a plugin"
+    )
+    enable_plugin_parser.add_argument(
+        "plugin_name",
+        nargs="?",
+        help="Plugin to enable (interactive if not specified)"
+    )
+
+    disable_plugin_parser = plugins_subparsers.add_parser(
+        "disable",
+        help="Disable a plugin"
+    )
+    disable_plugin_parser.add_argument(
+        "plugin_name",
+        nargs="?",
+        help="Plugin to disable (interactive if not specified)"
     )
 
     # === REVIEW & HISTORY ===
@@ -355,6 +444,12 @@ def main():
         elif args.command == "context":
             handle_context_command(args, orchestrator)
 
+        elif args.command == "tools":
+            handle_tools_command(args, orchestrator)
+
+        elif args.command == "plugins":
+            handle_plugins_command(args, orchestrator)
+
         elif args.command == "review":
             orchestrator.review()
 
@@ -486,6 +581,61 @@ def handle_context_command(args, orchestrator):
         orchestrator.config.set("shared_context.enabled", False)
         orchestrator.config.save()
         ColoredOutput.success("✓ Shared context disabled")
+
+
+def handle_tools_command(args, orchestrator):
+    """Handle tools subcommands"""
+    # Initialize tool manager if not already done
+    if not hasattr(orchestrator, 'tool_manager') or orchestrator.tool_manager is None:
+        orchestrator.tool_manager = ToolManager(orchestrator.config)
+
+    tool_commands = ToolCommands(orchestrator.config, orchestrator.tool_manager)
+
+    if not args.tools_command or args.tools_command == "list":
+        tool_commands.list_tools()
+
+    elif args.tools_command == "add":
+        server_name = getattr(args, 'server_name', None)
+        tool_commands.add_mcp_server(server_name)
+
+    elif args.tools_command == "remove":
+        server_name = getattr(args, 'server_name', None)
+        tool_commands.remove_mcp_server(server_name)
+
+    elif args.tools_command == "servers":
+        tool_commands.list_mcp_servers()
+
+    elif args.tools_command == "test":
+        tool_name = getattr(args, 'tool_name', None)
+        tool_commands.test_tool(tool_name)
+
+
+def handle_plugins_command(args, orchestrator):
+    """Handle plugins subcommands"""
+    # Initialize plugin manager if not already done
+    if not hasattr(orchestrator, 'plugin_manager') or orchestrator.plugin_manager is None:
+        plugin_dirs = [Path(d) for d in orchestrator.config.get_plugin_directories()]
+        orchestrator.plugin_manager = PluginManager(plugin_dirs)
+
+        # Auto-load plugins if configured
+        if orchestrator.config.should_auto_load_plugins():
+            orchestrator.plugin_manager.load_all_plugins()
+
+    plugin_commands = PluginCommands(orchestrator.config, orchestrator.plugin_manager)
+
+    if not args.plugins_command or args.plugins_command == "list":
+        plugin_commands.list_plugins()
+
+    elif args.plugins_command == "discover":
+        plugin_commands.discover_plugins()
+
+    elif args.plugins_command == "enable":
+        plugin_name = getattr(args, 'plugin_name', None)
+        plugin_commands.enable_plugin(plugin_name)
+
+    elif args.plugins_command == "disable":
+        plugin_name = getattr(args, 'plugin_name', None)
+        plugin_commands.disable_plugin(plugin_name)
 
 
 def handle_diff_command(args, orchestrator):
