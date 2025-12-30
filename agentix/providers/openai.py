@@ -101,3 +101,61 @@ class OpenAIProvider(AIProvider):
     def get_codex_model(self) -> str:
         """Get the Codex model for code-specific tasks"""
         return "codex-5.2-medium"  # Latest Codex 5.2
+
+    def get_available_models(self) -> List[Dict[str, Any]]:
+        """Get list of available OpenAI models"""
+        try:
+            client = self.get_client()
+            # Fetch models from OpenAI API
+            models_response = client.models.list()
+            models = []
+
+            # Filter for relevant models (GPT-4, GPT-3.5, Codex)
+            for model in models_response.data:
+                model_id = model.id
+                # Include GPT-4, GPT-3.5, and Codex models
+                if any(prefix in model_id for prefix in ['gpt-4', 'gpt-3.5', 'codex', 'o1', 'o3']):
+                    models.append({
+                        "id": model_id,
+                        "name": model_id,
+                        "created": getattr(model, 'created', None)
+                    })
+
+            # Sort by creation date (newest first)
+            models.sort(key=lambda x: x.get('created', 0), reverse=True)
+            return models
+
+        except Exception as e:
+            # Fallback to known models if API call fails
+            return [
+                {
+                    "id": "codex-5.2-medium",
+                    "name": "Codex 5.2 Medium",
+                    "description": "Latest Codex for code generation"
+                },
+                {
+                    "id": "gpt-4-turbo",
+                    "name": "GPT-4 Turbo",
+                    "description": "Most capable GPT-4 model"
+                },
+                {
+                    "id": "gpt-4",
+                    "name": "GPT-4",
+                    "description": "Standard GPT-4 model"
+                },
+                {
+                    "id": "gpt-3.5-turbo",
+                    "name": "GPT-3.5 Turbo",
+                    "description": "Fast and efficient"
+                },
+                {
+                    "id": "o1-preview",
+                    "name": "O1 Preview",
+                    "description": "Advanced reasoning model"
+                },
+                {
+                    "id": "o3-mini",
+                    "name": "O3 Mini",
+                    "description": "Efficient O3 variant"
+                },
+            ]

@@ -166,3 +166,50 @@ class GeminiCLIProvider(AIProvider):
             "large_context": "gemini-3.0-pro-high",  # Handles massive context
         }
         return task_models.get(task_type, self.default_model)
+
+    def get_available_models(self) -> List[Dict[str, Any]]:
+        """Get list of available Gemini models for CLI"""
+        try:
+            # Try to fetch models from CLI if it supports a list command
+            result = subprocess.run(
+                [self.cli_command, "models", "list"],
+                capture_output=True,
+                text=True,
+                timeout=10
+            )
+
+            if result.returncode == 0:
+                # Parse the output (format depends on CLI implementation)
+                # For now, return static list
+                pass
+        except:
+            pass
+
+        # Return known Gemini models
+        return [
+            {
+                "id": "gemini-3.0-pro-high",
+                "name": "Gemini 3.0 Pro High",
+                "description": "Latest Gemini 3.0 Pro - best quality"
+            },
+            {
+                "id": "gemini-3.0-pro-low",
+                "name": "Gemini 3.0 Pro Low",
+                "description": "Latest Gemini 3.0 Pro - faster responses"
+            },
+            {
+                "id": "gemini-2.0-flash-exp",
+                "name": "Gemini 2.0 Flash Experimental",
+                "description": "Experimental fast model"
+            },
+            {
+                "id": "gemini-1.5-pro",
+                "name": "Gemini 1.5 Pro",
+                "description": "2M token context window"
+            },
+            {
+                "id": "gemini-1.5-flash",
+                "name": "Gemini 1.5 Flash",
+                "description": "Fast and efficient"
+            },
+        ]

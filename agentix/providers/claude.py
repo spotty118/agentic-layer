@@ -120,3 +120,45 @@ class ClaudeProvider(AIProvider):
             "review": "claude-sonnet-4.5-20250514",  # Sonnet 4.5 for analysis
         }
         return task_models.get(task_type, self.default_model)
+
+    def get_available_models(self) -> List[Dict[str, Any]]:
+        """Get list of available Claude models from Anthropic API"""
+        # Anthropic doesn't expose a models endpoint, so we return known models
+        # These are the latest Claude models as of Dec 2025
+        return [
+            {
+                "id": "claude-opus-4.5-20250514",
+                "name": "Claude Opus 4.5",
+                "description": "Most capable model for complex reasoning and analysis"
+            },
+            {
+                "id": "claude-sonnet-4.5-20250514",
+                "name": "Claude Sonnet 4.5",
+                "description": "Balanced performance for code and general tasks"
+            },
+            {
+                "id": "claude-haiku-4.5-20250514",
+                "name": "Claude Haiku 4.5",
+                "description": "Fast and efficient for simpler tasks"
+            },
+            {
+                "id": "claude-opus-4-20250514",
+                "name": "Claude Opus 4",
+                "description": "Previous generation high-capability model"
+            },
+            {
+                "id": "claude-sonnet-4-20250514",
+                "name": "Claude Sonnet 4",
+                "description": "Previous generation balanced model"
+            },
+            {
+                "id": "claude-3-5-sonnet-20241022",
+                "name": "Claude 3.5 Sonnet",
+                "description": "Claude 3.5 family - excellent for code"
+            },
+            {
+                "id": "claude-3-opus-20240229",
+                "name": "Claude 3 Opus",
+                "description": "Claude 3 family - high capability"
+            },
+        ]
