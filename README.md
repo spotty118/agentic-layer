@@ -39,21 +39,22 @@ Traditional AI coding tools lock you into a single provider. **Agentix** intelli
 
 ### 🤖 Multi-AI Integration
 
-| Provider | Strengths | Best For | Access Methods |
-|----------|-----------|----------|----------------|
-| **Claude** | Long context (200K tokens), Superior reasoning, Precise instructions | Specifications, Planning, Refactoring, Code Review | API + CLI 🆕 |
-| **OpenAI Codex** | Excellent code generation, Fast inference, Broad knowledge | Code Generation, Task Execution, Problem Solving | API + CLI 🆕 |
-| **Gemini** | Ultra-long context (2M tokens), Lightning fast, Multimodal | Large Codebases, Fast Iterations, Rapid Prototyping | API + CLI 🆕 |
-| **Ollama** | 100% local, Privacy-focused, No API costs | Offline work, Sensitive codebases | Local only |
-| **OpenRouter** | 100+ models, Flexible pricing | Access to many models | API only |
+| Provider | Latest Model (Dec 2025) | Strengths | Best For | Access Methods |
+|----------|----------|-----------|----------|----------------|
+| **Claude** | Sonnet 4 (claude-sonnet-4-20250514) | Long context, Superior reasoning, Precise instructions | Specifications, Planning, Refactoring, Code Review | API + CLI 🆕 |
+| **OpenAI** | GPT-4o (gpt-4o) | Excellent code generation, Fast inference, Broad knowledge | Code Generation, Task Execution, Problem Solving | API + CLI 🆕 |
+| **Gemini** | Gemini 2.0 (gemini-2.0-flash-exp) | Ultra-long context (2M tokens), Lightning fast, Multimodal | Large Codebases, Fast Iterations, Rapid Prototyping | API + CLI 🆕 |
+| **Ollama** | Various local models | 100% local, Privacy-focused, No API costs | Offline work, Sensitive codebases | Local only |
+| **OpenRouter** | 100+ models | Flexible pricing, Wide model selection | Access to many models | API only |
 
 **🆕 CLI Provider Support:** Use authenticated CLI tools (like `claude`, `openai`, `gemini`) without API keys! Just run `<tool> login` once, then Agentix uses your authenticated session. See [CLI_PROVIDERS.md](CLI_PROVIDERS.md) for setup.
 
 ### 🛡️ Safety & Control
-- Automatic file backups before modifications
-- Interactive confirmation prompts
-- Rollback capabilities
-- Comprehensive logging and history
+- **Diff Preview**: View changes before applying with unified or side-by-side diffs
+- **Automatic Backups**: File backups created before modifications
+- **Interactive Confirmation**: Review and approve changes with diff previews
+- **Rollback Capabilities**: Restore from automatic backups
+- **Comprehensive Logging**: Full history tracking and audit trail
 
 ## Installation
 
