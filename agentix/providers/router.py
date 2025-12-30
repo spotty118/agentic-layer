@@ -14,77 +14,107 @@ from .base import AIProvider, ProviderCapability
 from .claude import ClaudeProvider
 from .openai import OpenAIProvider
 from .gemini import GeminiProvider
+from .openrouter import OpenRouterProvider
+from .ollama import OllamaProvider
 
 
 class ProviderRouter:
-    """Intelligently routes tasks to optimal AI providers"""
+    """
+    Intelligently routes tasks to optimal AI providers.
+
+    Supports unlimited providers - configure as many as you want!
+    """
 
     # Best provider for each task type based on strengths
     TASK_PREFERENCES = {
-        "specification": ["claude", "gemini", "openai"],  # Claude best for specs
-        "planning": ["claude", "openai", "gemini"],  # Claude excels at planning
-        "tasks": ["claude", "openai", "gemini"],  # Claude for task breakdown
-        "code_generation": ["openai", "gemini", "claude"],  # OpenAI Codex excellent
-        "task_execution": ["gemini", "openai", "claude"],  # Gemini fast
-        "refactoring": ["claude", "openai", "gemini"],  # Claude understands code best
-        "review": ["claude", "openai", "gemini"],  # Claude for code analysis
-        "large_context": ["gemini", "claude", "openai"],  # Gemini 2M context
-        "fast_iteration": ["gemini", "openai", "claude"],  # Gemini fastest
+        "specification": ["claude", "openai", "gemini", "openrouter", "ollama"],
+        "planning": ["claude", "openai", "gemini", "openrouter", "ollama"],
+        "tasks": ["claude", "openai", "gemini", "openrouter", "ollama"],
+        "code_generation": ["openai", "ollama", "gemini", "claude", "openrouter"],
+        "task_execution": ["gemini", "ollama", "openai", "claude", "openrouter"],
+        "refactoring": ["claude", "openai", "gemini", "openrouter", "ollama"],
+        "review": ["claude", "openai", "gemini", "openrouter", "ollama"],
+        "large_context": ["gemini", "claude", "openrouter", "openai", "ollama"],
+        "fast_iteration": ["gemini", "ollama", "openai", "claude", "openrouter"],
+        "local": ["ollama"],  # Prefer local models when requested
+        "cost_effective": ["ollama", "openrouter", "gemini", "openai", "claude"],
     }
 
-    def __init__(self, config: Optional[Dict[str, Any]] = None):
+    # Map of provider names to their class constructors
+    PROVIDER_CLASSES = {
+        "claude": ClaudeProvider,
+        "openai": OpenAIProvider,
+        "gemini": GeminiProvider,
+        "openrouter": OpenRouterProvider,
+        "ollama": OllamaProvider,
+    }
+
+    def __init__(self, config: Optional[Dict[str, Any]] = None, shared_context: Optional[Any] = None):
         """
         Initialize provider router.
 
         Args:
             config: Configuration dict with provider settings
+            shared_context: Optional SharedContextWindow for multi-model collaboration
         """
         self.config = config or {}
         self.providers: Dict[str, AIProvider] = {}
+        self.shared_context = shared_context
         self._initialize_providers()
 
     def _initialize_providers(self):
-        """Initialize all available providers"""
-        # Try to initialize each provider
+        """
+        Initialize all configured providers dynamically.
+
+        This supports unlimited providers! Just add them to PROVIDER_CLASSES
+        and configure them in config.yaml
+        """
         providers_config = self.config.get("providers", {})
 
-        # Claude
-        if providers_config.get("claude", {}).get("enabled", True):
-            try:
-                claude = ClaudeProvider(
-                    api_key=providers_config.get("claude", {}).get("api_key")
-                )
-                if claude.validate_config():
-                    self.providers["claude"] = claude
-            except Exception as e:
-                print(f"Warning: Could not initialize Claude provider: {e}")
+        # Dynamically initialize all known providers
+        for provider_name, ProviderClass in self.PROVIDER_CLASSES.items():
+            provider_cfg = providers_config.get(provider_name, {})
 
-        # OpenAI
-        if providers_config.get("openai", {}).get("enabled", True):
-            try:
-                openai = OpenAIProvider(
-                    api_key=providers_config.get("openai", {}).get("api_key")
-                )
-                if openai.validate_config():
-                    self.providers["openai"] = openai
-            except Exception as e:
-                print(f"Warning: Could not initialize OpenAI provider: {e}")
+            # Skip if explicitly disabled
+            if not provider_cfg.get("enabled", True):
+                continue
 
-        # Gemini
-        if providers_config.get("gemini", {}).get("enabled", True):
             try:
-                gemini = GeminiProvider(
-                    api_key=providers_config.get("gemini", {}).get("api_key")
-                )
-                if gemini.validate_config():
-                    self.providers["gemini"] = gemini
+                # Extract provider-specific config
+                api_key = provider_cfg.get("api_key")
+
+                # Special handling for providers with extra params
+                if provider_name == "openrouter":
+                    provider = ProviderClass(
+                        api_key=api_key,
+                        site_url=provider_cfg.get("site_url"),
+                        site_name=provider_cfg.get("site_name")
+                    )
+                elif provider_name == "ollama":
+                    provider = ProviderClass(
+                        base_url=provider_cfg.get("base_url")
+                    )
+                else:
+                    provider = ProviderClass(api_key=api_key)
+
+                # Validate and add if successful
+                if provider.validate_config():
+                    self.providers[provider_name] = provider
+                    print(f"✓ Initialized {provider_name} provider")
+                else:
+                    print(f"⚠ {provider_name} validation failed - skipping")
+
             except Exception as e:
-                print(f"Warning: Could not initialize Gemini provider: {e}")
+                print(f"⚠ Could not initialize {provider_name}: {e}")
 
         if not self.providers:
             raise RuntimeError(
-                "No AI providers available. Please configure at least one provider "
-                "(Claude, OpenAI, or Gemini) with a valid API key."
+                "No AI providers available! Please configure at least one provider:\n"
+                "- Claude: Set ANTHROPIC_API_KEY\n"
+                "- OpenAI: Set OPENAI_API_KEY\n"
+                "- Gemini: Set GOOGLE_API_KEY\n"
+                "- OpenRouter: Set OPENROUTER_API_KEY\n"
+                "- Ollama: Ensure Ollama is running (http://localhost:11434)"
             )
 
     def get_provider(
@@ -165,6 +195,7 @@ class ProviderRouter:
         temperature: float = 0.7,
         max_tokens: int = 4096,
         preferred_provider: Optional[str] = None,
+        use_shared_context: bool = False,
         **kwargs
     ) -> tuple[str, str]:
         """
@@ -177,11 +208,25 @@ class ProviderRouter:
             temperature: Sampling temperature
             max_tokens: Max tokens to generate
             preferred_provider: Preferred provider name
+            use_shared_context: Use shared context window if available
             **kwargs: Additional provider-specific arguments
 
         Returns:
             Tuple of (response_text, provider_name)
         """
+        # If using shared context, add messages to it and get full context
+        if use_shared_context and self.shared_context:
+            # Add user messages to shared context
+            for msg in messages:
+                if msg["role"] == "user":
+                    self.shared_context.add_message(
+                        role=msg["role"],
+                        content=msg["content"]
+                    )
+
+            # Get full context including contributions from other providers
+            messages = self.shared_context.get_messages(format="openai")
+
         # Estimate context size
         context_text = " ".join(msg["content"] for msg in messages)
         context_size = len(context_text) // 4  # Rough token estimate
@@ -205,6 +250,15 @@ class ProviderRouter:
             max_tokens=max_tokens,
             **kwargs
         )
+
+        # Add response to shared context if enabled
+        if use_shared_context and self.shared_context:
+            self.shared_context.add_message(
+                role="assistant",
+                content=response,
+                provider=provider.name,
+                model=model
+            )
 
         return response, provider.name
 

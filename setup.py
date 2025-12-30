@@ -5,9 +5,9 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setup(
     name="agentix",
-    version="1.0.0",
+    version="1.1.0",
     author="Agentix Team",
-    description="Multi-AI spec-driven coding agent integrating Claude, OpenAI Codex, and Gemini",
+    description="Multi-AI spec-driven coding agent with unlimited provider support (Claude, OpenAI, Gemini, OpenRouter, Ollama, and more)",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/yourusername/agentix",
@@ -32,6 +32,7 @@ setup(
         "anthropic>=0.18.0",
         "google-generativeai>=0.3.0",
         "pyyaml>=6.0",
+        "requests>=2.28.0",  # For OpenRouter and Ollama
     ],
     extras_require={
         "dev": [

@@ -14,6 +14,7 @@ DEFAULT_CONFIG = {
         "save_history": True
     },
     "providers": {
+        # Configure any/all providers - use 1 or use them all!
         "claude": {
             "enabled": True,
             "api_key": None,  # Uses ANTHROPIC_API_KEY env var if not set
@@ -29,6 +30,18 @@ DEFAULT_CONFIG = {
             "api_key": None,  # Uses GOOGLE_API_KEY env var if not set
             "default_model": "gemini-1.5-flash"
         },
+        "openrouter": {
+            "enabled": False,  # Set to True to use OpenRouter
+            "api_key": None,  # Uses OPENROUTER_API_KEY env var if not set
+            "default_model": "anthropic/claude-3.5-sonnet",
+            "site_url": None,  # Optional: your site URL
+            "site_name": None  # Optional: your app name
+        },
+        "ollama": {
+            "enabled": False,  # Set to True to use Ollama (local models)
+            "base_url": None,  # Uses OLLAMA_HOST env var, defaults to http://localhost:11434
+            "default_model": "codellama"
+        },
         "routing": {
             "strategy": "intelligent",  # intelligent | preferred | round_robin
             "preferred_provider": None,  # Set to force a specific provider
@@ -39,9 +52,16 @@ DEFAULT_CONFIG = {
                 "code_generation": "openai",  # Codex excellence
                 "task_execution": "gemini",  # Fast execution
                 "refactoring": "claude",  # Best code understanding
-                "review": "claude"  # Best analysis
+                "review": "claude",  # Best analysis
+                "local": "ollama",  # For local/offline work
+                "cost_effective": "ollama"  # Free local models
             }
         }
+    },
+    "shared_context": {
+        "enabled": False,  # Enable multi-model collaboration
+        "max_tokens": 200000,  # Max context to maintain
+        "save_snapshots": True  # Save context snapshots
     },
     "prompts": {
         "specify": "You are a product manager. Generate a functional specification (spec.md) based on the user's goal and codebase context. Focus on 'what' and 'why'. Use sections: Goal, User Stories, Acceptance Criteria, Edge Cases.",
